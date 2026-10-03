@@ -1,0 +1,122 @@
+{
+  "KO-3201": {
+    "equipment_name": "Cracked Gas Compressor KO-3201",
+    "equipment_class": "A",
+    "parameters": {
+      "KO3201_VIB": {
+        "name": "DE Radial Vibration",
+        "unit": "micron",
+        "normal": 30.0,
+        "alarm": 45.0,
+        "trip": 75.0,
+        "weight": 0.35,
+        "direction": "upper"
+      },
+      "KO3201_TEMP": {
+        "name": "Bearing Metal Temp",
+        "unit": "degC",
+        "normal": 80.0,
+        "alarm": 95.0,
+        "trip": 110.0,
+        "weight": 0.25,
+        "direction": "upper"
+      },
+      "KO3201_DISP": {
+        "name": "Discharge Pressure",
+        "unit": "barg",
+        "normal": 9.5,
+        "alarm": 11.0,
+        "trip": 12.5,
+        "weight": 0.15,
+        "direction": "upper"
+      },
+      "KO3201_AMP": {
+        "name": "Motor Current",
+        "unit": "A",
+        "normal": 135.0,
+        "alarm": 160.0,
+        "trip": 180.0,
+        "weight": 0.15,
+        "direction": "upper"
+      },
+      "KO3201_FEED": {
+        "name": "Suction Feed Flow",
+        "unit": "T/H",
+        "normal": 55.0,
+        "alarm": 40.0,
+        "trip": 30.0,
+        "weight": 0.1,
+        "direction": "lower"
+      }
+    },
+    "pid_topology": {
+      "nodes": [
+        "PLANT_RATE",
+        "KO3201_FEED",
+        "KO3201_DISP",
+        "KO3201_AMP",
+        "KO3201_TEMP",
+        "KO3201_VIB"
+      ],
+      "edges": [
+        [
+          "PLANT_RATE",
+          "KO3201_FEED"
+        ],
+        [
+          "KO3201_FEED",
+          "KO3201_DISP"
+        ],
+        [
+          "KO3201_FEED",
+          "KO3201_AMP"
+        ],
+        [
+          "KO3201_DISP",
+          "KO3201_TEMP"
+        ],
+        [
+          "KO3201_AMP",
+          "KO3201_TEMP"
+        ],
+        [
+          "KO3201_TEMP",
+          "KO3201_VIB"
+        ]
+      ]
+    }
+  },
+  "HE-3301": {
+    "equipment_name": "Feed/Effluent Heat Exchanger HE-3301",
+    "equipment_class": "B",
+    "parameters": {
+      "HE3301_DP": {
+        "name": "Tube-side Differential Pressure",
+        "unit": "bar",
+        "normal": 0.35,
+        "alarm": 0.6,
+        "trip": 0.9,
+        "weight": 0.4,
+        "direction": "upper"
+      },
+      "HE3301_DUTY": {
+        "name": "Heat Duty",
+        "unit": "%",
+        "normal": 98.0,
+        "alarm": 90.0,
+        "trip": 70.0,
+        "weight": 0.3,
+        "direction": "lower"
+      },
+      "HE3301_TEMP_OUT": {
+        "name": "Cold Outlet Temp",
+        "unit": "degC",
+        "normal": 130.0,
+        "alarm": 110.0,
+        "trip": 95.0,
+        "weight": 0.3,
+        "direction": "lower"
+      }
+    }
+  }
+}

@@ -13,6 +13,7 @@ research/
 docs/
 scratch/
 GEMINI.md
+TASKS.md
 *.pdf
 *.html
 
@@ -39,3 +40,8 @@ dist/
 .idea/
 .DS_Store
 Thumbs.db
+.agent/
+
+# Case-derived equipment config (copy equipment_config.example.json to equipment_config.json)
+src/config/equipment_config.json
+.pytest_cache/
