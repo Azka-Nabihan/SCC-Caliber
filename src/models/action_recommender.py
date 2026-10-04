@@ -732,13 +732,111 @@ class ActionRecommender:
         anomaly_info: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
-        Synthesizes an official, authentic SAP Plant Maintenance (PM) Work Order payload.
+        Synthesizes an authentic SAP Plant Maintenance (PM) Work Order payload.
+        Dynamically adapts priority, order type, status, BoM, and action steps
+        based on operational machine states (Hours 100, 633, 649, 679).
         """
+        tag_clean = str(tag_number).strip().upper()
+        if anomaly_info is None:
+            anomaly_info = {}
+
+        hour = int(anomaly_info.get("hour", 633))
+        run_status = int(anomaly_info.get("run_status", 1))
+        vib = float(anomaly_info.get("vibration", 31.24))
+
+        # State 1: Offline / Post-trip (Hour 679+)
+        if run_status == 0 or hour >= 679:
+            return {
+                "notification_id": "NOTIF-2026-PM-0690",
+                "work_order_id": "WO-8845012",
+                "order_type": "PM02 (Breakdown Maintenance / Emergency Recovery)",
+                "functional_location": f"ZCU-OLEFINS-COMP-01 / {tag_clean}",
+                "asset_description": "Cracked Gas Compressor Train (Stage 1-4)",
+                "priority": "P1 Emergency Outage (32h Downtime)",
+                "required_window": "32h Unplanned Turnaround",
+                "target_duration_hrs": 32.0,
+                "status": "MAJOR OUTAGE (Emergency Recovery)",
+                "lead_technician": "STA-02 (Rotating Equipment Specialist)",
+                "work_center": "MECH-REL-01",
+                "safety_permit": "PTW-HC-TIER1 (Plant Outage Confined Space & Line Break Permit)",
+                "bill_of_materials": [
+                    {"item": 10, "part_no": "BBR-3201-DE", "description": "Babbitt Journal Bearing Insert Sleeve Set", "qty": 2, "unit": "SET"},
+                    {"item": 20, "part_no": "LUB-SYN-VG46", "description": "Synthetic Turbine Lubricant ISO VG 46", "qty": 500, "unit": "LTR"},
+                    {"item": 30, "part_no": "GSK-HE3301", "description": "HE-3301 Cooler Channel Gasket Kit", "qty": 2, "unit": "KIT"},
+                    {"item": 40, "part_no": "SFT-ALIGN-KIT", "description": "Rotor Shaft Laser Alignment & Runout Kit", "qty": 1, "unit": "KIT"},
+                ],
+                "action_steps": [
+                    {"step": 1, "action": "Disassemble compressor upper casing and remove wiped DE journal bearing sleeve.", "timeframe": "Shift 1 (0-8h)", "source": "AR-2026-ZCU-0142 Investigation"},
+                    {"step": 2, "action": "Inspect rotor shaft journal runout, dye-penetrant test for micro-cracks, and conduct dynamic rebalancing.", "timeframe": "Shift 2 (8-20h)", "source": "RCA-2 Mechanical Overhaul"},
+                    {"step": 3, "action": "Install replacement babbitt sleeve, execute high-velocity lube flushing, plug leaking cooler tubes, and restart.", "timeframe": "Shift 3-4 (20-32h)", "source": "Plant Recovery Protocol"},
+                ],
+                "cost_center": "CC-ZCU-MAINT-3200",
+                "timestamp": "2026-04-29 07:00:00",
+            }
+
+        # State 4: Warning / DCS Alarm exceeded (Hour 649 - 678)
+        if vib >= 45.0 or (hour >= 649 and hour < 679):
+            return {
+                "notification_id": "NOTIF-2026-PM-0512",
+                "work_order_id": "WO-8843055",
+                "order_type": "PM01 (Critical Alarm Response / Emergency Mitigation)",
+                "functional_location": f"ZCU-OLEFINS-COMP-01 / {tag_clean}",
+                "asset_description": "Cracked Gas Compressor Train (Stage 1-4)",
+                "priority": "P1 Critical (Active DCS Alarm 45 µm)",
+                "required_window": "Immediate (< 4h Before Trip 75 µm)",
+                "target_duration_hrs": 12.0,
+                "status": "EMERGENCY DISPATCH (Active Alarm Response)",
+                "lead_technician": "STA-02 (Rotating Equipment Specialist)",
+                "work_center": "MECH-REL-01",
+                "safety_permit": "PTW-HC-TIER1 (Emergency Hydrocarbon Isolation & Tagout)",
+                "bill_of_materials": [
+                    {"item": 10, "part_no": "BBR-3201-DE", "description": "Babbitt Journal Bearing Insert Sleeve Set", "qty": 1, "unit": "SET"},
+                    {"item": 20, "part_no": "LUB-SYN-VG46", "description": "Synthetic Turbine Lubricant ISO VG 46", "qty": 300, "unit": "LTR"},
+                    {"item": 30, "part_no": "GSK-HE3301", "description": "HE-3301 Cooler Channel Gasket Kit", "qty": 1, "unit": "KIT"},
+                ],
+                "action_steps": [
+                    {"step": 1, "action": "Initiate controlled emergency ramp-down of cracking furnaces to minimum turndown.", "timeframe": "Immediate (< 15 min)", "source": "DCS Alarm Response SOP"},
+                    {"step": 2, "action": "Isolate cracked gas compression train and open anti-surge bypass valve FV-3201.", "timeframe": "< 30 min", "source": "API 670 Machinery Protection"},
+                    {"step": 3, "action": "Start auxiliary lube oil pump and switch cooler circuit to standby bundle to prevent babbitt seizure.", "timeframe": "< 1 hour", "source": "RCA-2 Recovery SOP"},
+                ],
+                "cost_center": "CC-ZCU-MAINT-3200",
+                "timestamp": "2026-04-28 01:00:00",
+            }
+
+        # State 2: Normal steady-state (Hour 0 - 632)
+        if hour < 633:
+            return {
+                "notification_id": "NOTIF-2026-PM-0102",
+                "work_order_id": "WO-8841020",
+                "order_type": "PM03 (Routine Preventive Maintenance / Shift Round Inspection)",
+                "functional_location": f"ZCU-OLEFINS-COMP-01 / {tag_clean}",
+                "asset_description": "Cracked Gas Compressor Train (Stage 1-4)",
+                "priority": "P3 Routine (Normal Steady State)",
+                "required_window": "24h Shift Round",
+                "target_duration_hrs": 2.0,
+                "status": "SCHEDULED (Shift Round Inspection)",
+                "lead_technician": "STA-01 (Operations Round Technician)",
+                "work_center": "MECH-OPS-01",
+                "safety_permit": "PTW-GEN-ROUTINE (Standard Plant Inspection Permit)",
+                "bill_of_materials": [
+                    {"item": 10, "part_no": "TOOL-OIL-SAMPLE", "description": "Lube Oil Sample Bottle & Sampling Kit", "qty": 2, "unit": "SET"},
+                    {"item": 20, "part_no": "FLT-ELEM-STD", "description": "Lube Oil Duplex Filter Element (Spare)", "qty": 1, "unit": "EA"},
+                    {"item": 30, "part_no": "LUB-SYN-VG46", "description": "Synthetic Turbine Lubricant ISO VG 46 (Top-Up)", "qty": 20, "unit": "LTR"},
+                ],
+                "action_steps": [
+                    {"step": 1, "action": "Maintain steady 55.0 T/H furnace cracking load and verify normal lube temperature.", "timeframe": "Continuous Shift", "source": "ZCU Operating Guide"},
+                    {"step": 2, "action": "Monitor routine lube oil filter differential pressure (dP < 0.3 bar) and radial vibration baseline (< 30 µm).", "timeframe": "24h Shift Round", "source": "ISO 10816-3 Standard"},
+                ],
+                "cost_center": "CC-ZCU-MAINT-3200",
+                "timestamp": "2026-04-05 08:00:00",
+            }
+
+        # State 3: Early Warning / Mitigation (Hour 633 - 648) [Default]
         return {
             "notification_id": "NOTIF-2026-PM-0419",
             "work_order_id": "WO-8842109",
             "order_type": "PM01 (Corrective Maintenance - High Priority)",
-            "functional_location": "ZCU-OLEFINS-COMP-01 / KO-3201",
+            "functional_location": f"ZCU-OLEFINS-COMP-01 / {tag_clean}",
             "asset_description": "Cracked Gas Compressor Train (Stage 1-4)",
             "priority": "1 - Very High (DCS Trip Imminent)",
             "required_window": "16 Hours (Before DCS Alarm 45 µm)",
@@ -751,6 +849,11 @@ class ActionRecommender:
                 {"item": 10, "part_no": "BBR-3201-DE", "description": "Babbitt Journal Bearing Insert Sleeve Set", "qty": 1, "unit": "SET"},
                 {"item": 20, "part_no": "LUB-SYN-VG46", "description": "Synthetic Turbine Lubricant ISO VG 46", "qty": 200, "unit": "LTR"},
                 {"item": 30, "part_no": "GSK-HE3301", "description": "HE-3301 Cooler Channel Gasket Kit", "qty": 1, "unit": "KIT"},
+            ],
+            "action_steps": [
+                {"step": 1, "action": "Reduce furnace load by 10% (to 49.5 T/H) to extend babbitt bearing life window (+9.5h).", "timeframe": "< 30 min", "source": "RCA-2 / Process Engineering"},
+                {"step": 2, "action": "Prepare standby cooler HE-3301 and reserve replacement babbitt sleeve in warehouse.", "timeframe": "< 2 hours", "source": "SAP PM Inventory"},
+                {"step": 3, "action": "Execute controlled 8h turnaround shutdown before vibration exceeds DCS Alarm limit (45 µm).", "timeframe": "16h Window", "source": "RCA-2 Turnaround SOP"},
             ],
             "cost_center": "CC-ZCU-MAINT-3200",
             "timestamp": "2026-04-27 09:30:00",

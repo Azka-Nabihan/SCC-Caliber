@@ -342,3 +342,67 @@ def test_data_provider_copilot_clean_status(data_provider):
     assert "🛡️" not in res["source"]
 
 
+def test_dynamic_sap_work_orders_all_states(data_provider):
+    """
+    Test 14 (Phase 1): Verifies dynamic work order adaptation across machine states:
+    - Hour 100: Routine PM03, Priority Routine, Target duration 2.0h, Scheduled status
+    - Hour 633: Proactive PM01, Priority Very High, Target duration 8.0h, Dispatched status
+    - Hour 649: Critical PM01, Priority Critical, Target duration 12.0h, Emergency status
+    - Hour 679: Breakdown PM02, Priority Emergency Outage, Target duration 32.0h, Outage status
+    """
+    wo100 = data_provider.generate_sap_work_order(current_hour=100)
+    assert wo100["notification_id"] == "NOTIF-2026-PM-0102"
+    assert "PM03" in wo100["order_type"]
+    assert "P3 Routine" in wo100["priority"]
+    assert wo100["target_duration_hrs"] == 2.0
+    assert "SCHEDULED" in wo100["status"]
+    assert len(wo100["action_steps"]) >= 2
+
+    wo633 = data_provider.generate_sap_work_order(current_hour=633)
+    assert wo633["notification_id"] == "NOTIF-2026-PM-0419"
+    assert "PM01" in wo633["order_type"]
+    assert "Very High" in wo633["priority"]
+    assert wo633["target_duration_hrs"] == 8.0
+    assert "DISPATCHED" in wo633["status"]
+    assert len(wo633["action_steps"]) >= 3
+
+    wo649 = data_provider.generate_sap_work_order(current_hour=649)
+    assert wo649["notification_id"] == "NOTIF-2026-PM-0512"
+    assert "PM01" in wo649["order_type"]
+    assert "Critical" in wo649["priority"]
+    assert wo649["target_duration_hrs"] == 12.0
+    assert "EMERGENCY DISPATCH" in wo649["status"]
+    assert len(wo649["action_steps"]) >= 3
+
+    wo679 = data_provider.generate_sap_work_order(current_hour=679)
+    assert wo679["notification_id"] == "NOTIF-2026-PM-0690"
+    assert "PM02" in wo679["order_type"]
+    assert "Emergency Outage" in wo679["priority"]
+    assert wo679["target_duration_hrs"] == 32.0
+    assert "MAJOR OUTAGE" in wo679["status"]
+    assert len(wo679["action_steps"]) >= 3
+
+
+def test_56_assets_selector_options(data_provider):
+    """
+    Test 15 (Phase 1): Verifies that all 56 Plant ZCU equipment are indexed
+    with KO-3201 as default first option and remaining 55 sorted alphabetically.
+    """
+    fleet_meta = data_provider.get_fleet_matrix()
+    assets = fleet_meta["assets"]
+    assert len(assets) == 56
+
+    pilot_label = "KO-3201 - Cracked Gas Compressor"
+    other_labels = sorted([
+        f"{a['tag_number']} - {a['equipment_name']}"
+        for a in assets
+        if a["tag_number"] != "KO-3201"
+    ])
+    assert len(other_labels) == 55
+    all_options = [pilot_label] + other_labels
+    assert len(all_options) == 56
+    assert all_options[0] == pilot_label
+    assert any("HE-3301" in opt for opt in all_options)
+
+
+

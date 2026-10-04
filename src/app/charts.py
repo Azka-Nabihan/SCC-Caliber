@@ -291,8 +291,8 @@ def create_process_mimic_chart(
 ) -> go.Figure:
     """
     Renders an authentic 2-Loop Industrial P&ID Mimic Diagram (ISA-5.1 / ISA-18.2):
-    1. Loop 1 (Top): Main Hydrocarbon Gas Train with Anti-Surge Recycle Loop (FV-3201).
-    2. Loop 2 (Bottom): Auxiliary Closed Lube Oil Circuit (HE-3301 Cooler feeding KO-3201 Bearing).
+    1. Loop 1 (Top, Y=2.2): Main Hydrocarbon Gas Train with Anti-Surge Recycle Loop (FV-3201).
+    2. Loop 2 (Bottom, Y=0.6): Auxiliary Closed Lube Oil Console (HE-3301 Cooler feeding KO-3201 Bearing).
     Grounded in RCA-2 investigation: Tube leakage in HE-3301 contaminates bearing lubricant,
     raising VI-3201 vibration while main process gas flow (FT-3201, PT-3201) remains stable.
     """
@@ -321,13 +321,13 @@ def create_process_mimic_chart(
     fig = go.Figure()
 
     # =========================================================================
-    # LOOP 1: MAIN HYDROCARBON CRACKING GAS TRAIN (Y = 1.7)
+    # LOOP 1: MAIN HYDROCARBON CRACKING GAS TRAIN (Y = 2.2)
     # =========================================================================
-    # Main Gas Header Line
+    # Main Process Header Line: Feed Inlet -> V-3201 Drum -> KO-3201 Compressor -> Fractionation Outlet
     fig.add_trace(
         go.Scatter(
-            x=[0.6, 7.8],
-            y=[1.7, 1.7],
+            x=[0.6, 7.5],
+            y=[2.2, 2.2],
             mode="lines",
             line=dict(color="#475569", width=4),
             hoverinfo="none",
@@ -335,108 +335,127 @@ def create_process_mimic_chart(
         )
     )
 
-    # Main Gas Flow Directional Arrows
-    for ax in [1.8, 3.8, 6.0, 7.4]:
+    # Process Flow Directional Arrows along Main Header
+    for ax in [1.7, 3.8, 6.3]:
         fig.add_annotation(
-            x=ax, y=1.7,
+            x=ax, y=2.2,
             showarrow=True, arrowhead=2, arrowsize=1.2, arrowwidth=2.5, arrowcolor="#94A3B8",
             ax=-14, ay=0,
         )
 
-    # Anti-Surge Recycle Loop Line (Discharge -> Up -> Left -> Suction Drum)
+    # Inlet Battery Limit Badge
+    fig.add_annotation(
+        x=0.6, y=2.2,
+        text="<b>FEED GAS</b><br>55.4 T/H",
+        showarrow=False,
+        font=dict(color="#94A3B8", size=9),
+        align="center",
+        bgcolor="rgba(15, 23, 42, 0.8)",
+        bordercolor="#475569",
+        borderwidth=1,
+        borderpad=4,
+    )
+
+    # Outlet Battery Limit Badge
+    fig.add_annotation(
+        x=7.5, y=2.2,
+        text="<b>TO FRACTIONATION</b><br>Downstream Train",
+        showarrow=False,
+        font=dict(color="#94A3B8", size=9),
+        align="center",
+        bgcolor="rgba(15, 23, 42, 0.8)",
+        bordercolor="#475569",
+        borderwidth=1,
+        borderpad=4,
+    )
+
+    # Anti-Surge Recycle Loop: Taps discharge header (5.8) -> Rises to 3.25 -> Flows left through FV-3201 -> Enters V-3201 top (2.4)
     fig.add_trace(
         go.Scatter(
-            x=[6.8, 6.8, 2.7, 2.7],
-            y=[1.7, 2.45, 2.45, 1.7],
+            x=[5.8, 5.8, 2.4, 2.4],
+            y=[2.2, 3.25, 3.25, 2.44],
             mode="lines",
             line=dict(color="#38BDF8", width=2, dash="dash"),
             hoverinfo="text",
-            hovertext="Anti-Surge Recycle Header (Gas Bypass)",
+            hovertext="Anti-Surge Recycle Header (Gas Bypass to Suction Drum)",
             showlegend=False,
         )
     )
-    # Anti-Surge Recycle Arrow
+    # Tap junction on the discharge header
+    fig.add_trace(
+        go.Scatter(
+            x=[5.8], y=[2.2],
+            mode="markers",
+            marker=dict(size=9, color="#38BDF8", line=dict(color="#F8FAFC", width=1)),
+            hovertext="Recycle tap point on discharge header",
+            hoverinfo="text",
+            showlegend=False,
+        )
+    )
+    # Anti-Surge Flow Direction Arrow (leftward, toward suction drum)
     fig.add_annotation(
-        x=4.4, y=2.45,
+        x=3.1, y=3.25,
         showarrow=True, arrowhead=2, arrowsize=1.1, arrowwidth=2, arrowcolor="#38BDF8",
         ax=14, ay=0,
     )
-    # Anti-Surge Control Valve (FV-3201)
+    # Inlet arrow into the top of V-3201
+    fig.add_annotation(
+        x=2.4, y=2.46,
+        showarrow=True, arrowhead=2, arrowsize=1.1, arrowwidth=2, arrowcolor="#38BDF8",
+        ax=0, ay=-14,
+    )
+    # Anti-Surge Control Valve FV-3201
     fig.add_trace(
         go.Scatter(
-            x=[4.8], y=[2.45],
+            x=[3.9], y=[3.25],
             mode="markers+text",
-            marker=dict(size=30, color=CHANDRA_THEME["green"], symbol="bowtie", line=dict(color="#F8FAFC", width=1.5)),
+            marker=dict(size=28, color=CHANDRA_THEME["green"], symbol="bowtie", line=dict(color="#F8FAFC", width=1.5)),
             text=["FV-3201"],
             textposition="top center",
             textfont=dict(color="#38BDF8", size=9, family="Inter, monospace"),
-            hovertext="<b>Anti-Surge Control Valve FV-3201</b><br>State: Standby / Normal In-Spec",
+            hovertext="<b>Anti-Surge Control Valve FV-3201</b><br>State: Standby / Modulating In-Spec",
             hoverinfo="text",
             showlegend=False,
         )
     )
 
-    # =========================================================================
-    # LOOP 2: AUXILIARY CLOSED-LOOP LUBE OIL CIRCUIT (Y = 0.55)
-    # =========================================================================
-    # Lube Oil Supply Header: Tank -> Pump -> Cooler HE-3301 -> KO-3201 Bearing
+    # Instrument Tapping Lines (ISA-5.1 thin vertical leads)
+    # FT-3201 lead
     fig.add_trace(
         go.Scatter(
-            x=[1.4, 3.0, 4.8, 4.8],
-            y=[0.55, 0.55, 0.55, 1.45],
-            mode="lines",
-            line=dict(color=lube_color, width=3, dash="solid" if lube_color == CHANDRA_THEME["green"] else "dashdot"),
-            hoverinfo="text",
-            hovertext="Lube Oil Supply Line (ISO VG 46)",
-            showlegend=False,
+            x=[1.4, 1.4], y=[2.2, 2.75],
+            mode="lines", line=dict(color="#64748B", width=1, dash="dot"),
+            hoverinfo="none", showlegend=False,
         )
     )
-    # Lube Supply Arrow to Bearing
-    fig.add_annotation(
-        x=4.8, y=1.2,
-        showarrow=True, arrowhead=2, arrowsize=1.2, arrowwidth=2.5, arrowcolor=lube_color,
-        ax=0, ay=14,
-    )
-
-    # Lube Oil Return Line: Bearing -> Drop -> Tank
+    # PT-3202 lead
     fig.add_trace(
         go.Scatter(
-            x=[5.2, 5.2, 1.4, 1.4],
-            y=[1.45, 0.2, 0.2, 0.55],
-            mode="lines",
-            line=dict(color="#64748B", width=2, dash="dot"),
-            hoverinfo="text",
-            hovertext="Lube Oil Gravity Return Line to Sump Tank",
-            showlegend=False,
+            x=[6.6, 6.6], y=[2.2, 2.75],
+            mode="lines", line=dict(color="#64748B", width=1, dash="dot"),
+            hoverinfo="none", showlegend=False,
         )
     )
 
-    # =========================================================================
-    # TRANSMITTER & EQUIPMENT NODES
-    # =========================================================================
-    # 1. Feed Gas (FT-3201)
+    # 1. Flow Transmitter Balloon (FT-3201)
     fig.add_trace(
         go.Scatter(
-            x=[1.0], y=[1.7],
+            x=[1.4], y=[2.75],
             mode="markers+text",
-            marker=dict(size=38, color=CHANDRA_THEME["green"], line=dict(color="#F8FAFC", width=1.5)),
+            marker=dict(size=34, color=CHANDRA_THEME["green"], line=dict(color="#F8FAFC", width=1.5)),
             text=["FT-3201"],
             textposition="middle center",
-            textfont=dict(color="#0F172A", size=9, family="Inter, monospace", weight="bold"),
-            hovertext="<b>Feed Gas Flow FT-3201</b><br>Rate: 55.4 T/H (Normal Steady)",
+            textfont=dict(color="#0F172A", size=8, family="Inter, monospace", weight="bold"),
+            hovertext="<b>Feed Gas Flow Transmitter FT-3201</b><br>Rate: 55.4 T/H (Normal Steady)",
             hoverinfo="text",
             showlegend=False,
         )
-    )
-    fig.add_annotation(
-        x=1.0, y=1.35, text="<b>FEED GAS</b><br>55.4 T/H",
-        showarrow=False, font=dict(color="#94A3B8", size=9), align="center",
     )
 
     # 2. Suction Knock-Out Drum (V-3201 / PT-3201)
     fig.add_trace(
         go.Scatter(
-            x=[2.7], y=[1.7],
+            x=[2.4], y=[2.2],
             mode="markers+text",
             marker=dict(size=44, color=CHANDRA_THEME["green"], symbol="square", line=dict(color="#F8FAFC", width=1.5)),
             text=["V-3201"],
@@ -448,14 +467,14 @@ def create_process_mimic_chart(
         )
     )
     fig.add_annotation(
-        x=2.7, y=1.35, text="<b>SUCTION DRUM</b><br>PT-3201: 3.2 kg/cm²",
+        x=2.4, y=1.75, text="<b>SUCTION DRUM</b><br>PT-3201: 3.2 kg/cm²",
         showarrow=False, font=dict(color="#94A3B8", size=9), align="center",
     )
 
-    # 3. Cracked Gas Compressor (KO-3201 / VI-3201 / TI-3201)
+    # 3. Cracked Gas Compressor (KO-3201 / VI-3201 / Bearing)
     fig.add_trace(
         go.Scatter(
-            x=[4.8], y=[1.7],
+            x=[5.1], y=[2.2],
             mode="markers+text",
             marker=dict(size=52, color=vib_color, symbol="hexagon", line=dict(color="#F8FAFC", width=2)),
             text=["KO-3201"],
@@ -466,12 +485,19 @@ def create_process_mimic_chart(
             showlegend=False,
         )
     )
-    # Bearing Vibration Transmitter Badge above compressor
+    # Bearing Vibration Transmitter Balloon (VI-3201) above compressor
     fig.add_trace(
         go.Scatter(
-            x=[4.8], y=[2.1],
+            x=[5.1, 5.1], y=[2.45, 2.75],
+            mode="lines", line=dict(color="#64748B", width=1, dash="dot"),
+            hoverinfo="none", showlegend=False,
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=[5.1], y=[2.85],
             mode="markers+text",
-            marker=dict(size=34, color=vib_color, line=dict(color="#F8FAFC", width=1.5)),
+            marker=dict(size=32, color=vib_color, line=dict(color="#F8FAFC", width=1.5)),
             text=["VI-3201"],
             textposition="middle center",
             textfont=dict(color="#0F172A", size=8, family="Inter, monospace", weight="bold"),
@@ -480,34 +506,101 @@ def create_process_mimic_chart(
             showlegend=False,
         )
     )
+    # DE Journal Bearing label, anchored to the right of the bearing housing
     fig.add_annotation(
-        x=4.8, y=1.35, text=f"<b>DE JOURNAL BEARING</b><br><span style='color:{vib_color};'>{current_vibration:.1f} µm</span>",
-        showarrow=False, font=dict(color="#F8FAFC", size=9), align="center",
+        x=5.3, y=1.45, xanchor="left",
+        text=f"<b>DE JOURNAL BEARING</b><br><span style='color:{vib_color};'>{current_vibration:.1f} µm</span>",
+        showarrow=False, font=dict(color="#F8FAFC", size=9), align="left",
     )
 
-    # 4. Gas Discharge Train (PT-3202)
+    # 4. Discharge Pressure Transmitter (PT-3202)
     fig.add_trace(
         go.Scatter(
-            x=[7.0], y=[1.7],
+            x=[6.6], y=[2.75],
             mode="markers+text",
-            marker=dict(size=38, color=CHANDRA_THEME["green"], line=dict(color="#F8FAFC", width=1.5)),
+            marker=dict(size=34, color=CHANDRA_THEME["green"], line=dict(color="#F8FAFC", width=1.5)),
             text=["PT-3202"],
             textposition="middle center",
-            textfont=dict(color="#0F172A", size=9, family="Inter, monospace", weight="bold"),
-            hovertext="<b>Discharge Pressure PT-3202</b><br>Reading: 18.2 kg/cm² (Normal)",
+            textfont=dict(color="#0F172A", size=8, family="Inter, monospace", weight="bold"),
+            hovertext="<b>Discharge Pressure Transmitter PT-3202</b><br>Reading: 18.2 kg/cm² (Normal)",
             hoverinfo="text",
             showlegend=False,
         )
     )
     fig.add_annotation(
-        x=7.0, y=1.35, text="<b>DISCHARGE TRAIN</b><br>18.2 kg/cm²",
+        x=6.6, y=1.75, text="<b>DISCHARGE TRAIN</b><br>18.2 kg/cm²",
         showarrow=False, font=dict(color="#94A3B8", size=9), align="center",
     )
 
-    # 5. Lube Oil Sump Tank & Pump (TK-3301 & PM-3301)
+    # =========================================================================
+    # LOOP 2: AUXILIARY CLOSED-LOOP LUBE OIL CONSOLE (Y = 0.6)
+    # =========================================================================
+    # Lube Supply Header: Sump Tank (2.0) -> Pump (3.3) -> Cooler HE-3301 (5.1) -> Bearing Housing inlet (5.1, 1.32)
     fig.add_trace(
         go.Scatter(
-            x=[1.4], y=[0.55],
+            x=[2.0, 3.3, 5.1, 5.1],
+            y=[0.6, 0.6, 0.6, 1.32],
+            mode="lines",
+            line=dict(color=lube_color, width=2.5, dash="solid" if lube_color == CHANDRA_THEME["green"] else "dashdot"),
+            hoverinfo="text",
+            hovertext="Lube Oil Supply Line (Synthetic ISO VG 46 to Journal Bearing)",
+            showlegend=False,
+        )
+    )
+    # Supply Arrow into Bearing Housing
+    fig.add_annotation(
+        x=5.1, y=1.12,
+        showarrow=True, arrowhead=2, arrowsize=1.1, arrowwidth=2, arrowcolor=lube_color,
+        ax=0, ay=14,
+    )
+
+    # Bearing housing: shaft coupling stub from compressor casing, then the housing itself.
+    fig.add_trace(
+        go.Scatter(
+            x=[5.1, 5.1], y=[1.92, 1.58],
+            mode="lines", line=dict(color="#94A3B8", width=3),
+            hoverinfo="none", showlegend=False,
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=[5.1], y=[1.45],
+            mode="markers",
+            marker=dict(size=24, color="#334155", symbol="square", line=dict(color=vib_color, width=2)),
+            hovertext=f"<b>DE Journal Bearing Housing</b><br>Lube supply inlet (bottom), oil drain outlet (left)<br>Vibration: {current_vibration:.1f} µm",
+            hoverinfo="text",
+            showlegend=False,
+        )
+    )
+
+    # Lube Gravity Return Line: Bearing housing drain (left side) -> Left to X=4.5 -> Down to Y=1.05 -> Left to X=2.0 -> Down into TK-3301
+    fig.add_trace(
+        go.Scatter(
+            x=[5.0, 4.5, 4.5, 2.0, 2.0],
+            y=[1.45, 1.45, 1.05, 1.05, 0.8],
+            mode="lines",
+            line=dict(color="#64748B", width=1.8, dash="dot"),
+            hoverinfo="text",
+            hovertext="Lube Oil Gravity Return Line (Closed Circulation to Sump)",
+            showlegend=False,
+        )
+    )
+    # Return Flow Direction Arrow
+    fig.add_annotation(
+        x=3.3, y=1.05,
+        showarrow=True, arrowhead=2, arrowsize=1.0, arrowwidth=1.8, arrowcolor="#64748B",
+        ax=14, ay=0,
+    )
+    fig.add_annotation(
+        x=3.3, y=1.2,
+        text="Gravity Return Header",
+        showarrow=False, font=dict(color="#64748B", size=8), align="center",
+    )
+
+    # 5. Sump Tank TK-3301
+    fig.add_trace(
+        go.Scatter(
+            x=[2.0], y=[0.6],
             mode="markers+text",
             marker=dict(size=34, color="#334155", symbol="square", line=dict(color="#64748B", width=1.5)),
             text=["TK-3301"],
@@ -518,9 +611,15 @@ def create_process_mimic_chart(
             showlegend=False,
         )
     )
+    fig.add_annotation(
+        x=2.0, y=0.25, text="<b>SUMP TANK</b><br>TK-3301",
+        showarrow=False, font=dict(color="#94A3B8", size=8), align="center",
+    )
+
+    # 6. Circulation Pump PM-3301
     fig.add_trace(
         go.Scatter(
-            x=[3.0], y=[0.55],
+            x=[3.3], y=[0.6],
             mode="markers+text",
             marker=dict(size=34, color="#334155", symbol="circle", line=dict(color="#64748B", width=1.5)),
             text=["PM-3301"],
@@ -531,11 +630,15 @@ def create_process_mimic_chart(
             showlegend=False,
         )
     )
+    fig.add_annotation(
+        x=3.3, y=0.25, text="<b>LUBE PUMP</b><br>PM-3301",
+        showarrow=False, font=dict(color="#94A3B8", size=8), align="center",
+    )
 
-    # 6. Lube Oil Cooler (HE-3301 / TI-3301) - Root Cause Location!
+    # 7. Lube Oil Cooler HE-3301 (RCA-2 Root Cause Unit)
     fig.add_trace(
         go.Scatter(
-            x=[4.8], y=[0.55],
+            x=[5.1], y=[0.6],
             mode="markers+text",
             marker=dict(size=44, color=lube_color, symbol="diamond", line=dict(color="#F8FAFC", width=2)),
             text=["HE-3301"],
@@ -547,12 +650,12 @@ def create_process_mimic_chart(
         )
     )
     fig.add_annotation(
-        x=4.8, y=0.15,
+        x=5.1, y=0.22,
         text=f"<b>LUBE OIL COOLER (HE-3301)</b><br><span style='color:{lube_color};'>TI-3301: 42.5 °C ({'TUBE LEAK' if current_hour >= 633 else 'IN-SPEC'})</span>",
         showarrow=False, font=dict(color="#F8FAFC", size=9), align="center",
     )
 
-    # P&ID Diagram Canvas Layout
+    # Clean Industrial P&ID Canvas Layout
     fig.update_layout(
         title=dict(
             text=f"Plant ZCU 2-Loop Process P&ID (Gas Train + Lube Auxiliary System) — Hour {current_hour}",
@@ -560,10 +663,10 @@ def create_process_mimic_chart(
         ),
         paper_bgcolor=CHANDRA_THEME["card_bg"],
         plot_bgcolor=CHANDRA_THEME["card_bg"],
-        height=320,
-        margin=dict(l=20, r=20, t=35, b=20),
-        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=[0.2, 8.2]),
-        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=[-0.05, 2.7]),
+        height=400,
+        margin=dict(l=20, r=20, t=40, b=25),
+        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=[0.0, 8.2]),
+        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=[0.0, 3.7]),
     )
 
     return fig

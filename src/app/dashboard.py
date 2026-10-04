@@ -1,8 +1,11 @@
 """
 Chandra Asri Petrochemical — Plant ZCU Predictive Reliability & Condition Monitoring System.
-Single Pane of Glass (SPOG) Condition-Based Maintenance (CBM) Console for CALIBER 2026.
-Features: 3-Stage Autonomous Diagnostic Reasoning, Interactive What-If Copilot,
-1-Click SAP PM Work Order Dispatcher, and Authentic 2-Loop Industrial P&ID.
+Condition-Based Maintenance (CBM) Console for CALIBER 2026.
+4-Tab Industrial Architecture:
+- Tab 1: Asset Overview & Live Alerts
+- Tab 2: Sensors & Process Diagram
+- Tab 3: Maintenance Tasks & Work Orders
+- Tab 4: Plant Assets & Failure Analysis
 """
 
 import sys
@@ -27,14 +30,14 @@ from src.app.charts import (
     create_pf_escalation_chart,
 )
 
-# Page Configuration (100% Industrial English UI, Clean Standards)
+# Page Configuration (Industrial English UI, Clean Standards)
 st.set_page_config(
     page_title="Chandra Asri Plant ZCU Condition Monitoring | CALIBER 2026",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# Custom Industrial CSS Styling (Flat DCS Slate Theme, Zero Glow/Emojis)
+# Custom Industrial CSS Styling (Flat DCS Slate Theme, Zero Emojis)
 st.markdown(
     """
     <style>
@@ -172,13 +175,26 @@ st.markdown(
         color: #F8FAFC;
         line-height: 1.5;
     }
+
+    /* KPI Cards inside P-F Grid */
+    .grid-kpi-static {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-top: 10px;
+    }
+    .kpi-box-static {
+        background-color: #0F172A;
+        border: 1px solid #334155;
+        border-radius: 4px;
+        padding: 10px 14px;
+    }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
 
-@st.cache_resource
 def get_data_provider() -> DashboardDataProvider:
     return DashboardDataProvider()
 
@@ -200,20 +216,39 @@ def render_header():
 def main():
     provider = get_data_provider()
     df = provider.load_timeseries_data()
+    fleet_meta = provider.get_fleet_matrix()
+    all_assets = fleet_meta["assets"]
 
     # --- SIDEBAR OPERATOR CONSOLE ---
     st.sidebar.markdown("### Operator Control Console")
 
-    # Pilot Asset Selector
-    asset_selection = st.sidebar.selectbox(
-        "Monitored Asset",
-        options=["KO-3201 (Cracked Gas Compressor - ZCU)"],
-        index=0,
-        help="Pilot Asset MVP with 720h verified continuous telemetry. 56 Plant ZCU fleet assets available in Tab 3.",
-    )
-    st.sidebar.caption("Pilot Asset MVP (56 ZCU Fleet Assets indexed in Tab 3)")
+    # Build 56-asset options list: KO-3201 first, remaining 55 sorted alphabetically
+    pilot_label = "KO-3201 - Cracked Gas Compressor"
+    other_labels = sorted([
+        f"{a['tag_number']} - {a['equipment_name']}"
+        for a in all_assets
+        if a["tag_number"] != "KO-3201"
+    ])
+    asset_options = [pilot_label] + other_labels
 
-    # Operational Timeline Bookmarks
+    if "selected_asset" not in st.session_state:
+        st.session_state.selected_asset = pilot_label
+
+    try:
+        current_asset_idx = asset_options.index(st.session_state.selected_asset)
+    except ValueError:
+        current_asset_idx = 0
+
+    selected_asset = st.sidebar.selectbox(
+        "Monitored Asset",
+        options=asset_options,
+        index=current_asset_idx,
+        help="Pilot Asset KO-3201 has continuous 720h verified telemetry. All 56 Plant ZCU equipment are cataloged in Tab 4.",
+    )
+    st.session_state.selected_asset = selected_asset
+    st.sidebar.caption("(56 Plant Assets in Tab 4)")
+
+    # Operational Timeline Bookmarks (Short, un-truncated button labels)
     st.sidebar.markdown("#### Operational Bookmarks")
     c_bm1, c_bm2 = st.sidebar.columns(2)
     c_bm3, c_bm4 = st.sidebar.columns(2)
@@ -221,16 +256,16 @@ def main():
     if "timeline_slider" not in st.session_state:
         st.session_state.timeline_slider = 633
 
-    if c_bm1.button("Hr 100: Normal Steady", use_container_width=True, help="Baseline steady-state operation"):
+    if c_bm1.button("Hr 100: Normal", use_container_width=True, help="Baseline steady-state operation"):
         st.session_state.timeline_slider = 100
         st.rerun()
-    if c_bm2.button("Hr 633: GDN Alert", use_container_width=True, help="Early Warning: 16h before DCS alarm"):
+    if c_bm2.button("Hr 633: Alert", use_container_width=True, help="Early Warning: 16h before DCS alarm"):
         st.session_state.timeline_slider = 633
         st.rerun()
-    if c_bm3.button("Hr 649: DCS Alarm", use_container_width=True, help="Conventional 45 um alarm threshold reached"):
+    if c_bm3.button("Hr 649: Alarm", use_container_width=True, help="Conventional 45 um alarm threshold reached"):
         st.session_state.timeline_slider = 649
         st.rerun()
-    if c_bm4.button("Hr 679: Trip Post", use_container_width=True, help="Actual machine trip (RUN_STATUS=0)"):
+    if c_bm4.button("Hr 679: Trip", use_container_width=True, help="Actual machine trip (RUN_STATUS=0)"):
         st.session_state.timeline_slider = 679
         st.rerun()
 
@@ -246,7 +281,7 @@ def main():
     # Retrieve telemetry snapshot
     snap = provider.get_hour_snapshot(current_hour)
 
-    # Sidebar Status Indicator
+    # Sidebar Status Indicator (Clean ISA badge, repeated numbers removed)
     st.sidebar.markdown("---")
     badge_map = {
         "GREEN": "isa-normal",
@@ -261,21 +296,48 @@ def main():
         f"**Condition Status:**<br><span class='isa-badge {badge_css}'>{snap['current_status'].split(',')[0]}</span>",
         unsafe_allow_html=True,
     )
-    st.sidebar.markdown(f"**Vibration:** `{snap['vibration']:.2f} µm` (Alarm: 45 µm | Trip: 75 µm)")
-    st.sidebar.markdown(f"**Health Index:** `{snap['health_index']:.1f}%` (ISO 10816-3)")
+
+    # Sidebar Footer: Team Azkaban Credits
+    st.sidebar.markdown(
+        """
+        <div style="background:#1E293B; border:1px solid #334155; border-radius:6px; padding:12px; margin-top:24px; font-size:11px;">
+            <div style="font-weight:700; color:#38BDF8; letter-spacing:0.5px; font-size:10px;">DEVELOPED FOR CALIBER 2026</div>
+            <div style="font-weight:700; color:#F8FAFC; margin-top:4px; font-size:12px;">Team Azkaban</div>
+            <div style="color:#94A3B8; margin-top:4px; line-height:1.4;">
+                • Azka Nabihan H.<br>
+                • Nabila Najlaa C.<br>
+                • Rasiendriya Sajna
+            </div>
+            <div style="color:#64748B; margin-top:6px; font-size:10px;">Case 2: Intelligent Manufacturing</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
     # Render Main Header
     render_header()
 
-    # --- 3-TAB APPLICATION STRUCTURE ---
-    tab1, tab2, tab3 = st.tabs([
-        "Tab 1: Operational Cockpit & Prescriptive Actions",
-        "Tab 2: Telemetry Diagnostics & P-F Escalation Analysis",
-        "Tab 3: Plant ZCU Fleet Reliability & Asset Criticality Matrix",
+    # Non-Pilot Asset Informative Notification Banner
+    is_pilot = selected_asset.startswith("KO-3201")
+    if not is_pilot:
+        st.info(
+            f"Asset Status: NORMAL STEADY. High-frequency 720-hour time-travel simulation is currently active for Pilot Asset KO-3201. "
+            f"Full risk profile, failure history, and equipment criticality for {selected_asset} are displayed in Tab 4 (Plant Assets & Failure Analysis)."
+        )
+        if st.button("Switch Back to Pilot Asset KO-3201", type="primary"):
+            st.session_state.selected_asset = pilot_label
+            st.rerun()
+
+    # --- 4-TAB APPLICATION STRUCTURE ---
+    tab1, tab2, tab3, tab4 = st.tabs([
+        "Tab 1: Asset Overview & Live Alerts",
+        "Tab 2: Sensors & Process Diagram",
+        "Tab 3: Maintenance Tasks & Work Orders",
+        "Tab 4: Plant Assets & Failure Analysis",
     ])
 
     # =========================================================================
-    # TAB 1: OPERATIONAL COCKPIT & PRESCRIPTIVE ACTIONS
+    # TAB 1: ASSET OVERVIEW & LIVE ALERTS
     # =========================================================================
     with tab1:
         # Row 1: Executive KPI Metrics (4 Cards)
@@ -329,51 +391,46 @@ def main():
                 unsafe_allow_html=True,
             )
 
-        st.markdown("<div style='margin-top:14px;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
 
-        # Row 2: AI Root Cause Diagnostic Reasoning Engine Card (The Cognitive Brain!)
-        diag = provider.get_diagnostic_reasoning(current_hour)
-        st.markdown("#### AI Root Cause Diagnostic Reasoning Engine (Multi-Modal Chain-of-Thought)")
-        st.markdown(
-            f"""
-            <div style="background:#1E293B; border:1px solid #334155; border-radius:6px; padding:14px 16px; margin-bottom:16px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #334155; padding-bottom:8px;">
-                    <div style="font-size:12px; font-weight:700; color:#38BDF8; font-family:'Inter', monospace;">
-                        AUTONOMOUS DIAGNOSTIC INFERENCE | ASSET TAG: KO-3201 | HOUR {current_hour}
-                    </div>
-                    <div>
-                        <span class="isa-badge isa-amber">CONFIDENCE: {diag['confidence_score']:.1f}%</span>
-                        &nbsp;<span class="isa-badge isa-normal">MATCH: {diag['matched_incident']}</span>
-                    </div>
-                </div>
-                <div class="diag-stage" style="border-left:3px solid #38BDF8;">
-                    <div class="diag-header">Stage 1: Multi-Sensor Telemetry Observation</div>
-                    <div class="diag-body">{diag['step_1_observation']}</div>
-                </div>
-                <div class="diag-stage" style="border-left:3px solid #F59E0B;">
-                    <div class="diag-header" style="color:#F59E0B;">Stage 2: Mechanical & Thermodynamic Process Inference</div>
-                    <div class="diag-body">{diag['step_2_inference']}</div>
-                </div>
-                <div class="diag-stage" style="border-left:3px solid #10B981;">
-                    <div class="diag-header" style="color:#10B981;">Stage 3: Enterprise RCA Memory Cross-Correlation</div>
-                    <div class="diag-body">{diag['step_3_rca_correlation']}</div>
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        # Operational Status Banner
+        if snap["operational_state"] == 3:
+            st.info(
+                f"EARLY WARNING ACTIVE (Hour {current_hour}): Shaft vibration micro-deviation detected "
+                f"(VI-3201: {snap['vibration']:.2f} µm, GDN score: {snap['gdn_anomaly_score']:.2f}). "
+                "16-hour proactive intervention window active. Refer to Tab 3 for maintenance work order and SOP steps."
+            )
+        elif snap["operational_state"] in [4, 5]:
+            st.warning(
+                f"ALARM LEVEL EXCEEDED (Hour {current_hour}): Shaft radial vibration has reached {snap['vibration']:.2f} µm "
+                "(exceeding DCS Alarm threshold 45 µm). Immediate controlled mitigation required. Refer to Tab 3."
+            )
+        elif snap["operational_state"] == 1:
+            st.error(
+                f"MACHINE OFFLINE / TRIP (Hour {current_hour}): Cracked gas compressor stopped (RUN_STATUS = 0). "
+                "Emergency turnaround and overhaul protocol active. Refer to Tab 3."
+            )
+        else:
+            st.success(
+                f"NORMAL STEADY-STATE (Hour {current_hour}): All monitored telemetry and process variables are within design baseline limits."
+            )
 
-        # Row 3: Industrial 60/40 Split Console
-        col_left, col_right = st.columns([1.35, 1.05])
+        # Row 2: Clean 2-Column Split Console
+        col_left, col_right = st.columns([1.3, 1.1])
 
-        # --- LEFT COLUMN (60%): TELEMETRY TREND & INTERACTIVE COPILOT ---
+        # --- LEFT COLUMN: SHAFT VIBRATION TREND & SAFETY LIMITS ---
         with col_left:
             st.markdown("#### Shaft Vibration Trend vs DCS Alarm Thresholds")
             st.plotly_chart(create_compact_vibration_trend(df, current_hour), use_container_width=True)
+            st.caption(
+                "Operational Thresholds: Normal Baseline (< 30.0 µm) | Early Alert (31.24 µm at Hr 633) | "
+                "DCS High Alarm (45.0 µm) | DCS High-High Trip (75.0 µm)"
+            )
 
-            # Interactive Operational What-If Copilot Console
-            st.markdown("#### Interactive Operational What-If Copilot Console")
-            st.caption("Test real-time engineering scenarios and physics constraints against plant RCA memory:")
+        # --- RIGHT COLUMN: OPERATIONAL ASSISTANT (WHAT-IF COPILOT) ---
+        with col_right:
+            st.markdown("#### Operational Assistant (What-If Copilot)")
+            st.caption("Ask questions and simulate engineering scenarios against verified plant knowledge:")
 
             # 3 Preset Action Buttons
             p_col1, p_col2, p_col3 = st.columns(3)
@@ -388,7 +445,7 @@ def main():
 
             custom_q = st.text_input(
                 "Ask Copilot a Custom Operational Question:",
-                placeholder="e.g. Berapa batas temperatur aman oli pendingin HE-3301?",
+                placeholder="e.g. What is the safe operating temperature for cooler HE-3301?",
                 key="copilot_custom_query",
             )
             if custom_q.strip():
@@ -434,96 +491,54 @@ def main():
                 unsafe_allow_html=True,
             )
 
-        # --- RIGHT COLUMN (40%): PRESCRIPTIVE ACTIONS & 1-CLICK SAP PM ---
-        with col_right:
-            st.markdown("#### Standard Operating Procedure (SOP) Action Plan (< 30 Mins)")
-            for act in snap["immediate_actions"]:
-                st.markdown(
-                    f"""
-                    <div class="action-item">
-                        <b>Step {act.get('step', 1)}:</b> {act.get('action', '')}
-                        <div style="font-size:10px; color:#94A3B8; margin-top:3px;">
-                            Timeframe: {act.get('timeframe', '< 30 min')} &nbsp;|&nbsp; Source: <b>{act.get('source', 'RCA-2')}</b>
-                        </div>
+        st.markdown("<div style='margin-top:14px;'></div>", unsafe_allow_html=True)
+
+        # AI Root Cause Diagnostic Reasoning Engine Card
+        diag = provider.get_diagnostic_reasoning(current_hour)
+        st.markdown("#### AI Root Cause Diagnostic Reasoning Engine (Multi-Modal Chain-of-Thought)")
+        st.markdown(
+            f"""
+            <div style="background:#1E293B; border:1px solid #334155; border-radius:6px; padding:14px 16px; margin-bottom:16px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #334155; padding-bottom:8px;">
+                    <div style="font-size:12px; font-weight:700; color:#38BDF8; font-family:'Inter', monospace;">
+                        AUTONOMOUS DIAGNOSTIC INFERENCE | ASSET TAG: KO-3201 | HOUR {current_hour}
                     </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-
-            # 1-Click SAP PM Work Order Dispatcher Button & Card
-            st.markdown("#### Enterprise Maintenance Dispatch (CMMS / SAP PM)")
-            if "sap_dispatched" not in st.session_state:
-                st.session_state.sap_dispatched = False
-
-            c_btn1, c_btn2 = st.columns([1.4, 1.0])
-            if c_btn1.button("Generate & Dispatch SAP PM Work Order", use_container_width=True, type="primary"):
-                st.session_state.sap_dispatched = True
-            if c_btn2.button("Reset Ticket", use_container_width=True):
-                st.session_state.sap_dispatched = False
-
-            if st.session_state.sap_dispatched:
-                sap_data = provider.generate_sap_work_order(current_hour)
-                st.markdown(
-                    f"""
-                    <div style="background:#0F172A; border:1px solid #10B981; border-radius:6px; padding:12px 14px; margin-top:8px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #334155; padding-bottom:6px; margin-bottom:8px;">
-                            <div style="font-weight:700; font-size:12px; color:#10B981; font-family:'Inter', monospace;">
-                                SAP PM ORDER: {sap_data['work_order_id']}
-                            </div>
-                            <span class="isa-badge isa-normal">{sap_data['status']}</span>
-                        </div>
-                        <div style="font-size:11px; line-height:1.6; color:#F8FAFC;">
-                            • <b>Notification:</b> <code>{sap_data['notification_id']}</code> (Type: {sap_data['order_type']})<br>
-                            • <b>Functional Location:</b> <code>{sap_data['functional_location']}</code><br>
-                            • <b>Priority:</b> <span style="color:#EF4444; font-weight:700;">{sap_data['priority']}</span><br>
-                            • <b>Target Duration:</b> {sap_data['target_duration_hrs']} Hours | Lead Window: {sap_data['required_window']}<br>
-                            • <b>Assigned Crew:</b> {sap_data['lead_technician']} ({sap_data['work_center']})<br>
-                            • <b>Permit-to-Work:</b> <code>{sap_data['safety_permit']}</code>
-                        </div>
-                        <div style="margin-top:8px; border-top:1px solid #334155; padding-top:6px; font-size:11px;">
-                            <b>Required Bill of Materials (BoM):</b>
-                            <div style="color:#94A3B8; font-size:10px; margin-top:3px;">
-                                - BBR-3201-DE: Babbitt Journal Bearing Sleeve (Qty: 1 SET)<br>
-                                - LUB-SYN-VG46: Synthetic Turbine Lubricant ISO VG 46 (Qty: 200 LTR)<br>
-                                - GSK-HE3301: HE-3301 Cooler Gasket Kit (Qty: 1 KIT)
-                            </div>
-                        </div>
+                    <div>
+                        <span class="isa-badge isa-amber">CONFIDENCE: {diag['confidence_score']:.1f}%</span>
+                        &nbsp;<span class="isa-badge isa-normal">MATCH: {diag['matched_incident']}</span>
                     </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-            else:
-                st.caption("Click button above to synthesize and dispatch an official SAP PM maintenance order.")
-
-            st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
-            st.markdown("#### Corrective & Preventive Actions (CAPA) Log")
-            for capa in snap["permanent_capa"][:2]:
-                st.markdown(
-                    f"""
-                    <div class="capa-item">
-                        <b>{capa.get('category', 'Technical CAPA')}:</b> {capa.get('action', '')}
-                        <div style="font-size:10px; color:#94A3B8; margin-top:3px;">
-                            PIC: <b>{capa.get('pic', 'Reliability')}</b> &nbsp;|&nbsp; Target: <b>{capa.get('due_date', '2026-05-30')}</b> &nbsp;|&nbsp; Ref: {capa.get('source', 'RCA-2')}
-                        </div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
+                </div>
+                <div class="diag-stage" style="border-left:3px solid #38BDF8;">
+                    <div class="diag-header">Stage 1: Multi-Sensor Telemetry Observation</div>
+                    <div class="diag-body">{diag['step_1_observation']}</div>
+                </div>
+                <div class="diag-stage" style="border-left:3px solid #F59E0B;">
+                    <div class="diag-header" style="color:#F59E0B;">Stage 2: Mechanical & Thermodynamic Process Inference</div>
+                    <div class="diag-body">{diag['step_2_inference']}</div>
+                </div>
+                <div class="diag-stage" style="border-left:3px solid #10B981;">
+                    <div class="diag-header" style="color:#10B981;">Stage 3: Enterprise RCA Memory Cross-Correlation</div>
+                    <div class="diag-body">{diag['step_3_rca_correlation']}</div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
     # =========================================================================
-    # TAB 2: TELEMETRY DIAGNOSTICS & P-F ESCALATION ANALYSIS
+    # TAB 2: SENSORS & PROCESS DIAGRAM
     # =========================================================================
     with tab2:
         st.markdown("### Process Instrumentation Telemetry & Anomaly Attribution")
         st.caption("Continuous 720-hour OSIsoft PI telemetry streams synchronized with Graph Deviation Network (GDN) multimodal anomaly scores:")
 
-        # Detailed two-tier telemetry chart
+        # Two-tier telemetry chart
         st.plotly_chart(create_telemetry_trend_chart(df, current_hour), use_container_width=True)
 
         st.markdown(
-            """
+            f"""
             <div style="background:#1E293B; border:1px solid #334155; border-left:3px solid #818CF8; padding:10px 14px; border-radius:4px; font-size:12px; margin-bottom:14px;">
-                <b>Engineering Diagnostic Note (Hour 633):</b> Upstream process conditions (<i>Plant Rate: 56.3 T/H, Feed Flow: 55.4 T/H, Bearing Temp: 64.5 °C</i>) remain within stable design envelopes. The GDN anomaly score (10.72) is localized to shaft radial vibration micro-deviation, confirming early babbitt bearing distress rather than process instability.
+                <b>Engineering Diagnostic Note (Hour {current_hour}):</b> Upstream process conditions (<i>Plant Rate: 56.3 T/H, Feed Flow: 55.4 T/H, Bearing Temp: 64.5 °C</i>) remain within stable design envelopes. The GDN anomaly score ({snap['gdn_anomaly_score']:.2f}) is localized to shaft radial vibration micro-deviation, confirming early babbitt bearing distress rather than process instability.
             </div>
             """,
             unsafe_allow_html=True,
@@ -543,159 +558,325 @@ def main():
             use_container_width=True,
         )
 
-        st.markdown("---")
+    # =========================================================================
+    # TAB 3: MAINTENANCE TASKS & WORK ORDERS
+    # =========================================================================
+    with tab3:
+        st.markdown("### Enterprise Maintenance Tasks & Work Orders (SAP PM)")
+        st.caption("Dynamic timeline adaptation: Work order priority, status, and action steps automatically update with operational state.")
 
-        # Smooth Client-Side Turnaround Decision Escalation Simulator
-        st.markdown("### Turnaround Decision Escalation Simulator (P-F Curve)")
-        st.caption("Drag the intervention slider to evaluate the cost of delaying turnaround against projected downtime (8h vs 32h) and financial loss:")
+        # Dynamically retrieve work order payload for the current hour
+        sap_data = provider.generate_sap_work_order(current_hour)
 
-        # Client-Side Interactive HTML Slider Widget (Smooth 60 FPS, Zero Server Round-Trip)
-        components.html(
-            """
-            <!DOCTYPE html>
-            <html>
-            <head>
-            <style>
-            body {
-                margin: 0;
-                padding: 0;
-                background-color: transparent;
-                font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                color: #F8FAFC;
-            }
-            .sim-container {
-                background-color: #1E293B;
-                border: 1px solid #334155;
-                border-radius: 6px;
-                padding: 16px 20px;
-            }
-            .grid-kpi {
-                display: grid;
-                grid-template-columns: repeat(4, 1fr);
-                gap: 12px;
-                margin-bottom: 16px;
-            }
-            .kpi-box {
-                background-color: #0F172A;
-                border: 1px solid #334155;
-                border-radius: 4px;
-                padding: 10px 14px;
-            }
-            .kpi-title {
-                font-size: 11px;
-                text-transform: uppercase;
-                color: #94A3B8;
-                font-weight: 600;
-                letter-spacing: 0.5px;
-            }
-            .kpi-value {
-                font-size: 22px;
-                font-weight: 700;
-                color: #F8FAFC;
-                margin-top: 4px;
-                transition: color 0.15s ease;
-            }
-            .kpi-badge {
-                font-size: 11px;
-                color: #38BDF8;
-                margin-top: 2px;
-            }
-            .slider-row {
-                display: flex;
-                flex-direction: column;
-                gap: 6px;
-            }
-            .slider-labels {
-                display: flex;
-                justify-content: space-between;
-                font-size: 11px;
-                color: #94A3B8;
-                font-family: monospace;
-            }
-            input[type=range] {
-                -webkit-appearance: none;
-                width: 100%;
-                background: #334155;
-                height: 8px;
-                border-radius: 4px;
-                outline: none;
-                cursor: pointer;
-            }
-            input[type=range]::-webkit-slider-thumb {
-                -webkit-appearance: none;
-                appearance: none;
-                width: 20px;
-                height: 20px;
-                border-radius: 50%;
-                background: #38BDF8;
-                cursor: pointer;
-                border: 2px solid #F8FAFC;
-                box-shadow: 0 0 6px rgba(56, 189, 248, 0.5);
-                transition: transform 0.1s ease;
-            }
-            input[type=range]::-webkit-slider-thumb:hover {
-                transform: scale(1.15);
-            }
-            </style>
-            </head>
-            <body>
-            <div class="sim-container">
-                <div class="grid-kpi">
-                    <div class="kpi-box">
-                        <div class="kpi-title">Intervention Hour</div>
-                        <div id="hr-val" class="kpi-value" style="color:#38BDF8;">Hr 633</div>
-                        <div id="delay-val" class="kpi-badge">+0h Delay</div>
+        col_wo, col_sop = st.columns([1.2, 1.0])
+
+        with col_wo:
+            st.markdown("#### SAP Plant Maintenance Work Order Ticket")
+            st.markdown(
+                f"""
+                <div style="background:#0F172A; border:1px solid #38BDF8; border-radius:6px; padding:14px 16px; margin-bottom:14px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #334155; padding-bottom:8px; margin-bottom:10px;">
+                        <div style="font-weight:700; font-size:13px; color:#38BDF8; font-family:'Inter', monospace;">
+                            ORDER: {sap_data['work_order_id']}
+                        </div>
+                        <span class="isa-badge isa-normal">{sap_data['status']}</span>
                     </div>
-                    <div class="kpi-box">
-                        <div class="kpi-title">Projected Turnaround</div>
-                        <div id="dt-val" class="kpi-value" style="color:#F59E0B;">8.0 Hours</div>
-                        <div class="kpi-badge">vs 32h Unplanned Trip</div>
+                    <div style="font-size:12px; line-height:1.7; color:#F8FAFC;">
+                        • <b>Notification:</b> <code>{sap_data['notification_id']}</code><br>
+                        • <b>Order Type:</b> <code>{sap_data['order_type']}</code><br>
+                        • <b>Functional Location:</b> <code>{sap_data['functional_location']}</code><br>
+                        • <b>Asset Description:</b> {sap_data['asset_description']}<br>
+                        • <b>Priority:</b> <span style="color:#EF4444; font-weight:700;">{sap_data['priority']}</span><br>
+                        • <b>Target Duration:</b> {sap_data['target_duration_hrs']} Hours | Lead Window: {sap_data['required_window']}<br>
+                        • <b>Assigned Crew:</b> {sap_data['lead_technician']} ({sap_data['work_center']})<br>
+                        • <b>Permit-to-Work:</b> <code>{sap_data['safety_permit']}</code>
                     </div>
-                    <div class="kpi-box">
-                        <div class="kpi-title">Cost of Delay</div>
-                        <div id="cost-val" class="kpi-value" style="color:#EF4444;">$0.0k</div>
-                        <div class="kpi-badge">@ $49.5k/hr downtime</div>
-                    </div>
-                    <div class="kpi-box">
-                        <div class="kpi-title">Net Cost Savings</div>
-                        <div id="save-val" class="kpi-value" style="color:#10B981;">$1,188.0k USD</div>
-                        <div class="kpi-badge">vs $1,584.0k Total Loss</div>
+                    <div style="margin-top:10px; border-top:1px solid #334155; padding-top:8px; font-size:11px;">
+                        <b>Required Bill of Materials (BoM):</b>
+                        <div style="color:#94A3B8; font-size:11px; margin-top:4px;">
+                """,
+                unsafe_allow_html=True,
+            )
+            for item in sap_data.get("bill_of_materials", []):
+                st.markdown(
+                    f"<div style='margin-left:8px; color:#CBD5E1;'>• <code>{item['part_no']}</code>: {item['description']} (Qty: {item['qty']} {item['unit']})</div>",
+                    unsafe_allow_html=True,
+                )
+            st.markdown(
+                """
+                        </div>
                     </div>
                 </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
-                <div class="slider-row">
-                    <div class="slider-labels">
-                        <span>Point P: Hr 633 (Immediate 8h Turnaround)</span>
-                        <span id="slider-curr" style="color:#38BDF8; font-weight:700;">Selected Action Hour: 633</span>
-                        <span>Point F: Hr 679 (Unplanned 32h Trip)</span>
+            c_btn1, c_btn2 = st.columns(2)
+            if c_btn1.button("Dispatch Work Order to CMMS", use_container_width=True, type="primary"):
+                st.success(f"Work order {sap_data['work_order_id']} dispatched to {sap_data['work_center']}.")
+            if c_btn2.button("Print Maintenance Order", use_container_width=True):
+                st.info("Maintenance order sheet queued for export.")
+
+        with col_sop:
+            st.markdown("#### Standard Operating Procedure (SOP) Action Steps")
+            action_steps = sap_data.get("action_steps", snap.get("immediate_actions", []))
+            for act in action_steps:
+                st.markdown(
+                    f"""
+                    <div class="action-item">
+                        <b>Step {act.get('step', 1)}:</b> {act.get('action', '')}
+                        <div style="font-size:10px; color:#94A3B8; margin-top:3px;">
+                            Timeframe: {act.get('timeframe', '< 30 min')} &nbsp;|&nbsp; Source: <b>{act.get('source', 'RCA-2')}</b>
+                        </div>
                     </div>
-                    <input type="range" id="t-slider" min="633" max="679" value="633" oninput="updateSim(this.value)">
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+            st.markdown("<div style='margin-top:14px;'></div>", unsafe_allow_html=True)
+            st.markdown("#### Corrective & Preventive Actions (CAPA) Log")
+            for capa in snap["permanent_capa"][:3]:
+                st.markdown(
+                    f"""
+                    <div class="capa-item">
+                        <b>{capa.get('category', 'Technical CAPA')}:</b> {capa.get('action', '')}
+                        <div style="font-size:10px; color:#94A3B8; margin-top:3px;">
+                            PIC: <b>{capa.get('pic', 'Reliability')}</b> &nbsp;|&nbsp; Target: <b>{capa.get('due_date', '2026-05-30')}</b> &nbsp;|&nbsp; Ref: {capa.get('source', 'RCA-2')}
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+    # =========================================================================
+    # TAB 4: PLANT ASSETS & FAILURE ANALYSIS
+    # =========================================================================
+    with tab4:
+        st.markdown("### Adaptive Shutdown Cost & Delay Calculator (P-F Degradation)")
+        st.caption("3-state physical machine model evaluating the cost of delay against projected downtime (8h vs 32h) and financial loss:")
+
+        # 3-State Physical Machine Adaptation
+        if current_hour < 633:
+            preview_failure = st.toggle(
+                "Preview Failure Scenario (Hours 633-679)",
+                value=False,
+                help="Inspect the theoretical degradation curve without violating physical timeline consistency",
+            )
+            if not preview_failure:
+                st.markdown(
+                    """
+                    <div style="background:#1E293B; border:1px solid #10B981; border-radius:6px; padding:14px 18px; margin-bottom:14px;">
+                        <div style="font-size:13px; font-weight:700; color:#10B981; text-transform:uppercase;">
+                            State 1: Normal Steady Operation (Hours 0 - 632)
+                        </div>
+                        <div style="font-size:12px; color:#F8FAFC; margin-top:4px;">
+                            Point P has not been reached. The machine is operating reliably within design limits at 55.0 T/H capacity. No turnaround or shutdown intervention is required.
+                        </div>
+                        <div class="grid-kpi-static">
+                            <div class="kpi-box-static">
+                                <div class="cbm-label">Projected Downtime</div>
+                                <div class="cbm-val" style="color:#10B981;">0.0 Hours</div>
+                                <div class="cbm-sub">Full Production</div>
+                            </div>
+                            <div class="kpi-box-static">
+                                <div class="cbm-label">Turnaround Loss</div>
+                                <div class="cbm-val" style="color:#10B981;">$0.0k</div>
+                                <div class="cbm-sub">@ 55.0 T/H Load</div>
+                            </div>
+                            <div class="kpi-box-static">
+                                <div class="cbm-label">Cost of Delay</div>
+                                <div class="cbm-val" style="color:#94A3B8;">$0.0k</div>
+                                <div class="cbm-sub">No Inaction Penalty</div>
+                            </div>
+                            <div class="kpi-box-static">
+                                <div class="cbm-label">Point P Status</div>
+                                <div class="cbm-val" style="color:#38BDF8;">Not Reached</div>
+                                <div class="cbm-sub">Normal Steady Envelope</div>
+                            </div>
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            else:
+                # Render interactive HTML P-F slider
+                components.html(
+                    """
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                    <style>
+                    body {
+                        margin: 0; padding: 0; background-color: transparent;
+                        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                        color: #F8FAFC;
+                    }
+                    .sim-container {
+                        background-color: #1E293B; border: 1px solid #334155; border-radius: 6px; padding: 16px 20px;
+                    }
+                    .grid-kpi {
+                        display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;
+                    }
+                    .kpi-box {
+                        background-color: #0F172A; border: 1px solid #334155; border-radius: 4px; padding: 10px 14px;
+                    }
+                    .kpi-title {
+                        font-size: 11px; text-transform: uppercase; color: #94A3B8; font-weight: 600; letter-spacing: 0.5px;
+                    }
+                    .kpi-value {
+                        font-size: 22px; font-weight: 700; color: #F8FAFC; margin-top: 4px; transition: color 0.15s ease;
+                    }
+                    .kpi-badge {
+                        font-size: 11px; color: #38BDF8; margin-top: 2px;
+                    }
+                    .slider-row {
+                        display: flex; flex-direction: column; gap: 6px;
+                    }
+                    .slider-labels {
+                        display: flex; justify-content: space-between; font-size: 11px; color: #94A3B8; font-family: monospace;
+                    }
+                    input[type=range] {
+                        -webkit-appearance: none; width: 100%; background: #334155; height: 8px; border-radius: 4px; outline: none; cursor: pointer;
+                    }
+                    input[type=range]::-webkit-slider-thumb {
+                        -webkit-appearance: none; appearance: none; width: 20px; height: 20px; border-radius: 50%;
+                        background: #38BDF8; cursor: pointer; border: 2px solid #F8FAFC; box-shadow: 0 0 6px rgba(56, 189, 248, 0.5);
+                    }
+                    </style>
+                    </head>
+                    <body>
+                    <div class="sim-container">
+                        <div class="grid-kpi">
+                            <div class="kpi-box">
+                                <div class="kpi-title">Intervention Hour</div>
+                                <div id="hr-val" class="kpi-value" style="color:#38BDF8;">Hr 633</div>
+                                <div id="delay-val" class="kpi-badge">+0h Delay</div>
+                            </div>
+                            <div class="kpi-box">
+                                <div class="kpi-title">Projected Turnaround</div>
+                                <div id="dt-val" class="kpi-value" style="color:#F59E0B;">8.0 Hours</div>
+                                <div class="kpi-badge">vs 32h Unplanned Trip</div>
+                            </div>
+                            <div class="kpi-box">
+                                <div class="kpi-title">Cost of Delay</div>
+                                <div id="cost-val" class="kpi-value" style="color:#EF4444;">$0.0k</div>
+                                <div class="kpi-badge">@ $49.5k/hr downtime</div>
+                            </div>
+                            <div class="kpi-box">
+                                <div class="kpi-title">Net Cost Savings</div>
+                                <div id="save-val" class="kpi-value" style="color:#10B981;">$1,188.0k USD</div>
+                                <div class="kpi-badge">vs $1,584.0k Total Loss</div>
+                            </div>
+                        </div>
+                        <div class="slider-row">
+                            <div class="slider-labels">
+                                <span>Point P: Hr 633 (Immediate 8h Turnaround)</span>
+                                <span id="slider-curr" style="color:#38BDF8; font-weight:700;">Selected Action Hour: 633</span>
+                                <span>Point F: Hr 679 (Unplanned 32h Trip)</span>
+                            </div>
+                            <input type="range" id="t-slider" min="633" max="679" value="633" oninput="updateSim(this.value)">
+                        </div>
+                    </div>
+                    <script>
+                    function updateSim(val) {
+                        val = parseInt(val);
+                        let elapsed = val - 633;
+                        let dt = 8.0 + 24.0 * Math.pow(elapsed / 46.0, 2);
+                        let delayCost = (dt - 8.0) * 49.5;
+                        let savings = Math.max(0, (32.0 - dt) * 49.5);
+                        document.getElementById('slider-curr').innerText = 'Selected Action Hour: ' + val;
+                        document.getElementById('hr-val').innerText = 'Hr ' + val;
+                        document.getElementById('delay-val').innerText = '+' + elapsed + 'h Delay';
+                        document.getElementById('dt-val').innerText = dt.toFixed(1) + ' Hours';
+                        document.getElementById('cost-val').innerText = '$' + delayCost.toFixed(1) + 'k';
+                        document.getElementById('save-val').innerText = '$' + savings.toLocaleString('en-US', {minimumFractionDigits: 1, maximumFractionDigits: 1}) + 'k USD';
+                    }
+                    </script>
+                    </body>
+                    </html>
+                    """,
+                    height=165,
+                )
+                st.plotly_chart(create_pf_escalation_chart(633), use_container_width=True)
+
+        elif 633 <= current_hour < 679:
+            # State 2: Active P-F Window
+            sim = provider.simulate_pf_decision(current_hour)
+            st.markdown(
+                f"""
+                <div style="background:#1E293B; border:1px solid #F59E0B; border-radius:6px; padding:14px 18px; margin-bottom:14px;">
+                    <div style="font-size:13px; font-weight:700; color:#F59E0B; text-transform:uppercase;">
+                        State 2: Active P-F Degradation Window (Hour {current_hour})
+                    </div>
+                    <div style="font-size:12px; color:#F8FAFC; margin-top:4px;">
+                        Point P detected at Hour 633. Delaying controlled intervention increases turnaround duration from 8.0 hours up to 32.0 hours.
+                    </div>
+                    <div class="grid-kpi-static">
+                        <div class="kpi-box-static">
+                            <div class="cbm-label">Intervention Hour</div>
+                            <div class="cbm-val" style="color:#38BDF8;">Hr {current_hour}</div>
+                            <div class="cbm-sub">+{current_hour - 633}h Delay Elapsed</div>
+                        </div>
+                        <div class="kpi-box-static">
+                            <div class="cbm-label">Projected Turnaround</div>
+                            <div class="cbm-val" style="color:#F59E0B;">{sim['projected_downtime_hrs']:.1f} Hours</div>
+                            <div class="cbm-sub">vs 32h Unplanned Trip</div>
+                        </div>
+                        <div class="kpi-box-static">
+                            <div class="cbm-label">Cost of Delay</div>
+                            <div class="cbm-val" style="color:#EF4444;">${sim['cost_of_delay_k_usd']:.1f}k</div>
+                            <div class="cbm-sub">@ $49.5k/hr Downtime</div>
+                        </div>
+                        <div class="kpi-box-static">
+                            <div class="cbm-label">Net Cost Savings</div>
+                            <div class="cbm-val" style="color:#10B981;">${sim['net_savings_k_usd']:,.1f}k USD</div>
+                            <div class="cbm-sub">vs $1,584.0k Total Loss</div>
+                        </div>
+                    </div>
                 </div>
-            </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            st.plotly_chart(create_pf_escalation_chart(current_hour), use_container_width=True)
 
-            <script>
-            function updateSim(val) {
-                val = parseInt(val);
-                let elapsed = val - 633;
-                let dt = 8.0 + 24.0 * Math.pow(elapsed / 46.0, 2);
-                let delayCost = (dt - 8.0) * 49.5;
-                let savings = Math.max(0, (32.0 - dt) * 49.5);
-
-                document.getElementById('slider-curr').innerText = 'Selected Action Hour: ' + val;
-                document.getElementById('hr-val').innerText = 'Hr ' + val;
-                document.getElementById('delay-val').innerText = '+' + elapsed + 'h Delay';
-                document.getElementById('dt-val').innerText = dt.toFixed(1) + ' Hours';
-                document.getElementById('cost-val').innerText = '$' + delayCost.toFixed(1) + 'k';
-                document.getElementById('save-val').innerText = '$' + savings.toLocaleString('en-US', {minimumFractionDigits: 1, maximumFractionDigits: 1}) + 'k USD';
-            }
-            </script>
-            </body>
-            </html>
-            """,
-            height=165,
-        )
-
-        st.plotly_chart(create_pf_escalation_chart(633), use_container_width=True)
+        else:
+            # State 3: Post-Trip Emergency Stoppage (Hours 679+)
+            st.markdown(
+                """
+                <div style="background:#1E293B; border:1px solid #EF4444; border-radius:6px; padding:14px 18px; margin-bottom:14px;">
+                    <div style="font-size:13px; font-weight:700; color:#EF4444; text-transform:uppercase;">
+                        State 3: Post-Trip Emergency Stoppage (Hours 679+)
+                    </div>
+                    <div style="font-size:12px; color:#F8FAFC; margin-top:4px;">
+                        Point F reached. Machine trip occurred (RUN_STATUS = 0). The 16-hour proactive intervention window has expired.
+                    </div>
+                    <div class="grid-kpi-static">
+                        <div class="kpi-box-static">
+                            <div class="cbm-label">Actual Downtime</div>
+                            <div class="cbm-val" style="color:#EF4444;">32.0 Hours</div>
+                            <div class="cbm-sub">Emergency Outage</div>
+                        </div>
+                        <div class="kpi-box-static">
+                            <div class="cbm-label">Actual Turnaround Loss</div>
+                            <div class="cbm-val" style="color:#EF4444;">$1,584.0k</div>
+                            <div class="cbm-sub">$1.584M USD Impact</div>
+                        </div>
+                        <div class="kpi-box-static">
+                            <div class="cbm-label">Cost of Delay</div>
+                            <div class="cbm-val" style="color:#EF4444;">$1,188.0k</div>
+                            <div class="cbm-sub">Inaction Escalation</div>
+                        </div>
+                        <div class="kpi-box-static">
+                            <div class="cbm-label">Net Savings</div>
+                            <div class="cbm-val" style="color:#94A3B8;">$0.0k USD</div>
+                            <div class="cbm-sub">Window Expired</div>
+                        </div>
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            st.plotly_chart(create_pf_escalation_chart(679), use_container_width=True)
 
         with st.expander("Turnaround Downtime Escalation Protocol Justification (ISO 14224 / API 581)"):
             st.markdown(
@@ -709,25 +890,19 @@ def main():
                 """
             )
 
-    # =========================================================================
-    # TAB 3: PLANT ZCU FLEET RELIABILITY & ASSET CRITICALITY MATRIX
-    # =========================================================================
-    with tab3:
-        st.markdown("### Plant ZCU Fleet Reliability & Asset Criticality Matrix")
-        st.caption("Fleet health, failure modes, and risk exposure across all 56 Plant ZCU equipments:")
+        st.markdown("---")
 
-        fleet_meta = provider.get_fleet_matrix()
-
-        # Enterprise Exposure Metrics
+        # Enterprise Portfolio Risk Overview
+        st.markdown("### Plant ZCU Portfolio Risk & Fleet Criticality Overview")
         fc1, fc2, fc3, fc4 = st.columns(4)
         fc1.metric("Plant ZCU Portfolio Risk", f"${fleet_meta['zcu_portfolio_risk_k_usd']/1000.0:.2f}M USD", f"{fleet_meta['zcu_incident_count']} Incidents (Rank #1)")
         fc2.metric("12-Plant Complex Exposure", f"${fleet_meta['complex_total_exposure_k_usd']/1000.0:.2f}M USD", f"{fleet_meta['complex_incident_count']} Total Incidents")
         fc3.metric("Monitored ZCU Assets", f"{fleet_meta['total_assets']} Equipment", "17 Rotary | 10 Elec | 29 Static")
         fc4.metric("Data Provenance Ratio", "2 FACT : 54 HYPOTHESIS", "Official RCAs vs FMEA Engineering")
 
-        st.markdown("<div style='margin-top:8px;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
 
-        # Interactive Filters
+        # Interactive Fleet Filters
         filt_c1, filt_c2, filt_c3, filt_c4 = st.columns(4)
         with filt_c1:
             cat_filter = st.selectbox("Equipment Discipline", ["All (56)", "Rotary (17)", "Electrical (10)", "Static (29)"])
