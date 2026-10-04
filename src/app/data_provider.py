@@ -280,3 +280,36 @@ class DashboardDataProvider:
             "zcu_incident_count": len(zcu_records),
             "complex_incident_count": len(self.incidents_df),
         }
+
+    def get_diagnostic_reasoning(self, current_hour: int = 633) -> Dict[str, Any]:
+        """
+        Retrieves 3-stage multi-modal diagnostic reasoning payload.
+        """
+        snap = self.get_hour_snapshot(current_hour)
+        return self.recommender.generate_diagnostic_reasoning(
+            tag_number="KO-3201",
+            anomaly_info=snap,
+            use_llm=True,
+        )
+
+    def run_copilot_simulation(self, query: str, current_hour: int = 633) -> Dict[str, Any]:
+        """
+        Runs an operational What-If query simulation through the recommender engine.
+        """
+        snap = self.get_hour_snapshot(current_hour)
+        return self.recommender.query_copilot_simulation(
+            query_text=query,
+            tag_number="KO-3201",
+            anomaly_info=snap,
+            use_llm=True,
+        )
+
+    def generate_sap_work_order(self, current_hour: int = 633) -> Dict[str, Any]:
+        """
+        Synthesizes an official SAP PM Work Order ticket for maintenance execution.
+        """
+        snap = self.get_hour_snapshot(current_hour)
+        return self.recommender.generate_sap_work_order(
+            tag_number="KO-3201",
+            anomaly_info=snap,
+        )

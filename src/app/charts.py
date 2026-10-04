@@ -290,89 +290,44 @@ def create_process_mimic_chart(
     current_vibration: float = 31.24,
 ) -> go.Figure:
     """
-    Renders an authentic horizontal Process Mimic Flow Strip (ISA-5.1 & ISA-18.2).
-    Shows chemical process units with standard instrumentation transmitters:
-    [Feed Gas: FT-3201] -> [Suction Drum: PT-3201] -> [Compressor KO-3201: VI-3201, TI-3201]
-    -> [Lube Cooler HE-3301: TI-3301] -> [Discharge Train: PT-3202]
+    Renders an authentic 2-Loop Industrial P&ID Mimic Diagram (ISA-5.1 / ISA-18.2):
+    1. Loop 1 (Top): Main Hydrocarbon Gas Train with Anti-Surge Recycle Loop (FV-3201).
+    2. Loop 2 (Bottom): Auxiliary Closed Lube Oil Circuit (HE-3301 Cooler feeding KO-3201 Bearing).
+    Grounded in RCA-2 investigation: Tube leakage in HE-3301 contaminates bearing lubricant,
+    raising VI-3201 vibration while main process gas flow (FT-3201, PT-3201) remains stable.
     """
-    # Determine KO-3201 status color based on current condition
+    # Operational condition states
     if current_hour >= 679:
         vib_color = CHANDRA_THEME["grey"]
-        vib_status = "TRIP / STOPPED"
-        vib_tag_bg = CHANDRA_THEME["grey"]
+        vib_status = "TRIP / MACHINE STOPPED"
+        lube_color = CHANDRA_THEME["grey"]
     elif current_vibration >= 75.0 or current_hour >= 678:
         vib_color = CHANDRA_THEME["red"]
-        vib_status = "CRITICAL (TRIP HAZARD)"
-        vib_tag_bg = CHANDRA_THEME["red"]
+        vib_status = "CRITICAL (TRIP HAZARD 75 µm)"
+        lube_color = CHANDRA_THEME["red"]
     elif current_vibration >= 45.0 or current_hour >= 649:
         vib_color = CHANDRA_THEME["yellow"]
-        vib_status = "ALARM (DCS EXCURSION)"
-        vib_tag_bg = CHANDRA_THEME["yellow"]
+        vib_status = "ALARM (DCS EXCURSION 45 µm)"
+        lube_color = CHANDRA_THEME["yellow"]
     elif current_hour >= 633:
         vib_color = CHANDRA_THEME["amber"]
-        vib_status = "EARLY WARNING (GDN DEV)"
-        vib_tag_bg = CHANDRA_THEME["amber"]
+        vib_status = "EARLY WARNING (GDN ANOMALY)"
+        lube_color = CHANDRA_THEME["amber"]
     else:
         vib_color = CHANDRA_THEME["green"]
         vib_status = "NORMAL (IN-SPEC)"
-        vib_tag_bg = CHANDRA_THEME["green"]
-
-    # 5 Equipment Stage Definitions along X axis
-    stages = [
-        {
-            "x": 0.8,
-            "unit": "FEED GAS SUPPLY",
-            "tag": "FT-3201",
-            "val": "55.4 T/H",
-            "param": "Cracked Gas Flow",
-            "color": CHANDRA_THEME["green"],
-            "status": "NORMAL",
-        },
-        {
-            "x": 2.4,
-            "unit": "SUCTION DRUM (V-3201)",
-            "tag": "PT-3201",
-            "val": "3.2 kg/cm²",
-            "param": "Suction Pressure",
-            "color": CHANDRA_THEME["green"],
-            "status": "NORMAL",
-        },
-        {
-            "x": 4.2,
-            "unit": "COMPRESSOR (KO-3201)",
-            "tag": "VI-3201",
-            "val": f"{current_vibration:.1f} µm",
-            "param": "Radial Vibration",
-            "color": vib_color,
-            "status": vib_status,
-        },
-        {
-            "x": 6.0,
-            "unit": "LUBE COOLER (HE-3301)",
-            "tag": "TI-3301",
-            "val": "42.5 °C",
-            "param": "Lube Oil Outlet Temp",
-            "color": CHANDRA_THEME["green"],
-            "status": "NORMAL",
-        },
-        {
-            "x": 7.6,
-            "unit": "DISCHARGE TRAIN",
-            "tag": "PT-3202",
-            "val": "18.2 kg/cm²",
-            "param": "Discharge Pressure",
-            "color": CHANDRA_THEME["green"],
-            "status": "NORMAL",
-        },
-    ]
+        lube_color = CHANDRA_THEME["green"]
 
     fig = go.Figure()
 
-    # Draw main process piping header line
+    # =========================================================================
+    # LOOP 1: MAIN HYDROCARBON CRACKING GAS TRAIN (Y = 1.7)
+    # =========================================================================
+    # Main Gas Header Line
     fig.add_trace(
         go.Scatter(
-            x=[0.4, 8.0],
-            y=[1.0, 1.0],
+            x=[0.6, 7.8],
+            y=[1.7, 1.7],
             mode="lines",
             line=dict(color="#475569", width=4),
             hoverinfo="none",
@@ -380,79 +335,235 @@ def create_process_mimic_chart(
         )
     )
 
-    # Directional Flow Arrows on Piping
-    for arrow_x in [1.6, 3.3, 5.1, 6.8]:
+    # Main Gas Flow Directional Arrows
+    for ax in [1.8, 3.8, 6.0, 7.4]:
         fig.add_annotation(
-            x=arrow_x,
-            y=1.0,
-            showarrow=True,
-            arrowhead=2,
-            arrowsize=1.2,
-            arrowwidth=2.5,
-            arrowcolor="#94A3B8",
-            ax=-15,
-            ay=0,
+            x=ax, y=1.7,
+            showarrow=True, arrowhead=2, arrowsize=1.2, arrowwidth=2.5, arrowcolor="#94A3B8",
+            ax=-14, ay=0,
         )
 
-    # Draw Stage Blocks and Transmitter Badges
-    for s in stages:
-        # Transmitter circle marker above process line
-        fig.add_trace(
-            go.Scatter(
-                x=[s["x"]],
-                y=[1.45],
-                mode="markers+text",
-                marker=dict(
-                    size=42,
-                    color=s["color"],
-                    line=dict(color=CHANDRA_THEME["text_primary"], width=1.5),
-                ),
-                text=[s["tag"]],
-                textposition="middle center",
-                textfont=dict(color="#0F172A", size=10, family="Inter, monospace", weight="bold"),
-                hovertext=f"<b>ISA Tag: {s['tag']}</b><br>Unit: {s['unit']}<br>Parameter: {s['param']}<br>Reading: {s['val']}<br>Status: {s['status']}",
-                hoverinfo="text",
-                showlegend=False,
-            )
+    # Anti-Surge Recycle Loop Line (Discharge -> Up -> Left -> Suction Drum)
+    fig.add_trace(
+        go.Scatter(
+            x=[6.8, 6.8, 2.7, 2.7],
+            y=[1.7, 2.45, 2.45, 1.7],
+            mode="lines",
+            line=dict(color="#38BDF8", width=2, dash="dash"),
+            hoverinfo="text",
+            hovertext="Anti-Surge Recycle Header (Gas Bypass)",
+            showlegend=False,
         )
-
-        # Transmitter impulse line to piping
-        fig.add_trace(
-            go.Scatter(
-                x=[s["x"], s["x"]],
-                y=[1.0, 1.25],
-                mode="lines",
-                line=dict(color=s["color"], width=1.5, dash="dot"),
-                hoverinfo="none",
-                showlegend=False,
-            )
+    )
+    # Anti-Surge Recycle Arrow
+    fig.add_annotation(
+        x=4.4, y=2.45,
+        showarrow=True, arrowhead=2, arrowsize=1.1, arrowwidth=2, arrowcolor="#38BDF8",
+        ax=14, ay=0,
+    )
+    # Anti-Surge Control Valve (FV-3201)
+    fig.add_trace(
+        go.Scatter(
+            x=[4.8], y=[2.45],
+            mode="markers+text",
+            marker=dict(size=30, color=CHANDRA_THEME["green"], symbol="bowtie", line=dict(color="#F8FAFC", width=1.5)),
+            text=["FV-3201"],
+            textposition="top center",
+            textfont=dict(color="#38BDF8", size=9, family="Inter, monospace"),
+            hovertext="<b>Anti-Surge Control Valve FV-3201</b><br>State: Standby / Normal In-Spec",
+            hoverinfo="text",
+            showlegend=False,
         )
+    )
 
-        # Equipment Unit Text Box below process line
-        fig.add_annotation(
-            x=s["x"],
-            y=0.55,
-            text=f"<b>{s['unit']}</b><br><span style='color:{s['color']};font-size:11px;'>{s['val']}</span>",
-            showarrow=False,
-            font=dict(color=CHANDRA_THEME["text_primary"], size=10, family="Inter, sans-serif"),
-            align="center",
-            bgcolor=CHANDRA_THEME["card_bg"],
-            bordercolor=s["color"],
-            borderwidth=1,
-            borderpad=5,
+    # =========================================================================
+    # LOOP 2: AUXILIARY CLOSED-LOOP LUBE OIL CIRCUIT (Y = 0.55)
+    # =========================================================================
+    # Lube Oil Supply Header: Tank -> Pump -> Cooler HE-3301 -> KO-3201 Bearing
+    fig.add_trace(
+        go.Scatter(
+            x=[1.4, 3.0, 4.8, 4.8],
+            y=[0.55, 0.55, 0.55, 1.45],
+            mode="lines",
+            line=dict(color=lube_color, width=3, dash="solid" if lube_color == CHANDRA_THEME["green"] else "dashdot"),
+            hoverinfo="text",
+            hovertext="Lube Oil Supply Line (ISO VG 46)",
+            showlegend=False,
         )
+    )
+    # Lube Supply Arrow to Bearing
+    fig.add_annotation(
+        x=4.8, y=1.2,
+        showarrow=True, arrowhead=2, arrowsize=1.2, arrowwidth=2.5, arrowcolor=lube_color,
+        ax=0, ay=14,
+    )
 
+    # Lube Oil Return Line: Bearing -> Drop -> Tank
+    fig.add_trace(
+        go.Scatter(
+            x=[5.2, 5.2, 1.4, 1.4],
+            y=[1.45, 0.2, 0.2, 0.55],
+            mode="lines",
+            line=dict(color="#64748B", width=2, dash="dot"),
+            hoverinfo="text",
+            hovertext="Lube Oil Gravity Return Line to Sump Tank",
+            showlegend=False,
+        )
+    )
+
+    # =========================================================================
+    # TRANSMITTER & EQUIPMENT NODES
+    # =========================================================================
+    # 1. Feed Gas (FT-3201)
+    fig.add_trace(
+        go.Scatter(
+            x=[1.0], y=[1.7],
+            mode="markers+text",
+            marker=dict(size=38, color=CHANDRA_THEME["green"], line=dict(color="#F8FAFC", width=1.5)),
+            text=["FT-3201"],
+            textposition="middle center",
+            textfont=dict(color="#0F172A", size=9, family="Inter, monospace", weight="bold"),
+            hovertext="<b>Feed Gas Flow FT-3201</b><br>Rate: 55.4 T/H (Normal Steady)",
+            hoverinfo="text",
+            showlegend=False,
+        )
+    )
+    fig.add_annotation(
+        x=1.0, y=1.35, text="<b>FEED GAS</b><br>55.4 T/H",
+        showarrow=False, font=dict(color="#94A3B8", size=9), align="center",
+    )
+
+    # 2. Suction Knock-Out Drum (V-3201 / PT-3201)
+    fig.add_trace(
+        go.Scatter(
+            x=[2.7], y=[1.7],
+            mode="markers+text",
+            marker=dict(size=44, color=CHANDRA_THEME["green"], symbol="square", line=dict(color="#F8FAFC", width=1.5)),
+            text=["V-3201"],
+            textposition="middle center",
+            textfont=dict(color="#0F172A", size=9, family="Inter, monospace", weight="bold"),
+            hovertext="<b>Suction KO Drum V-3201</b><br>Pressure PT-3201: 3.2 kg/cm²",
+            hoverinfo="text",
+            showlegend=False,
+        )
+    )
+    fig.add_annotation(
+        x=2.7, y=1.35, text="<b>SUCTION DRUM</b><br>PT-3201: 3.2 kg/cm²",
+        showarrow=False, font=dict(color="#94A3B8", size=9), align="center",
+    )
+
+    # 3. Cracked Gas Compressor (KO-3201 / VI-3201 / TI-3201)
+    fig.add_trace(
+        go.Scatter(
+            x=[4.8], y=[1.7],
+            mode="markers+text",
+            marker=dict(size=52, color=vib_color, symbol="hexagon", line=dict(color="#F8FAFC", width=2)),
+            text=["KO-3201"],
+            textposition="middle center",
+            textfont=dict(color="#0F172A", size=10, family="Inter, monospace", weight="bold"),
+            hovertext=f"<b>Cracked Gas Compressor KO-3201</b><br>Vibration VI-3201: {current_vibration:.2f} µm<br>Bearing Temp TI-3201: 64.5 °C<br>Status: {vib_status}",
+            hoverinfo="text",
+            showlegend=False,
+        )
+    )
+    # Bearing Vibration Transmitter Badge above compressor
+    fig.add_trace(
+        go.Scatter(
+            x=[4.8], y=[2.1],
+            mode="markers+text",
+            marker=dict(size=34, color=vib_color, line=dict(color="#F8FAFC", width=1.5)),
+            text=["VI-3201"],
+            textposition="middle center",
+            textfont=dict(color="#0F172A", size=8, family="Inter, monospace", weight="bold"),
+            hovertext=f"<b>Radial Vibration Transmitter VI-3201</b><br>Reading: {current_vibration:.2f} µm<br>Thresholds: Alarm 45 µm | Trip 75 µm",
+            hoverinfo="text",
+            showlegend=False,
+        )
+    )
+    fig.add_annotation(
+        x=4.8, y=1.35, text=f"<b>DE JOURNAL BEARING</b><br><span style='color:{vib_color};'>{current_vibration:.1f} µm</span>",
+        showarrow=False, font=dict(color="#F8FAFC", size=9), align="center",
+    )
+
+    # 4. Gas Discharge Train (PT-3202)
+    fig.add_trace(
+        go.Scatter(
+            x=[7.0], y=[1.7],
+            mode="markers+text",
+            marker=dict(size=38, color=CHANDRA_THEME["green"], line=dict(color="#F8FAFC", width=1.5)),
+            text=["PT-3202"],
+            textposition="middle center",
+            textfont=dict(color="#0F172A", size=9, family="Inter, monospace", weight="bold"),
+            hovertext="<b>Discharge Pressure PT-3202</b><br>Reading: 18.2 kg/cm² (Normal)",
+            hoverinfo="text",
+            showlegend=False,
+        )
+    )
+    fig.add_annotation(
+        x=7.0, y=1.35, text="<b>DISCHARGE TRAIN</b><br>18.2 kg/cm²",
+        showarrow=False, font=dict(color="#94A3B8", size=9), align="center",
+    )
+
+    # 5. Lube Oil Sump Tank & Pump (TK-3301 & PM-3301)
+    fig.add_trace(
+        go.Scatter(
+            x=[1.4], y=[0.55],
+            mode="markers+text",
+            marker=dict(size=34, color="#334155", symbol="square", line=dict(color="#64748B", width=1.5)),
+            text=["TK-3301"],
+            textposition="middle center",
+            textfont=dict(color="#F8FAFC", size=8, family="Inter, monospace"),
+            hovertext="<b>Lube Oil Sump Tank TK-3301</b><br>Fluid: Synthetic ISO VG 46",
+            hoverinfo="text",
+            showlegend=False,
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=[3.0], y=[0.55],
+            mode="markers+text",
+            marker=dict(size=34, color="#334155", symbol="circle", line=dict(color="#64748B", width=1.5)),
+            text=["PM-3301"],
+            textposition="middle center",
+            textfont=dict(color="#F8FAFC", size=8, family="Inter, monospace"),
+            hovertext="<b>Lube Oil Circulation Pump PM-3301</b><br>State: Running In-Spec",
+            hoverinfo="text",
+            showlegend=False,
+        )
+    )
+
+    # 6. Lube Oil Cooler (HE-3301 / TI-3301) - Root Cause Location!
+    fig.add_trace(
+        go.Scatter(
+            x=[4.8], y=[0.55],
+            mode="markers+text",
+            marker=dict(size=44, color=lube_color, symbol="diamond", line=dict(color="#F8FAFC", width=2)),
+            text=["HE-3301"],
+            textposition="middle center",
+            textfont=dict(color="#0F172A", size=9, family="Inter, monospace", weight="bold"),
+            hovertext=f"<b>Lube Oil Cooler HE-3301 (RCA-2 Focus)</b><br>Oil Temp TI-3301: 42.5 °C<br>Cooling Water dP: Anomaly Indication<br>Status: {'SUSPECT TUBE LEAK (WATER INGRESS)' if current_hour >= 633 else 'NORMAL'}",
+            hoverinfo="text",
+            showlegend=False,
+        )
+    )
+    fig.add_annotation(
+        x=4.8, y=0.15,
+        text=f"<b>LUBE OIL COOLER (HE-3301)</b><br><span style='color:{lube_color};'>TI-3301: 42.5 °C ({'TUBE LEAK' if current_hour >= 633 else 'IN-SPEC'})</span>",
+        showarrow=False, font=dict(color="#F8FAFC", size=9), align="center",
+    )
+
+    # P&ID Diagram Canvas Layout
     fig.update_layout(
         title=dict(
-            text=f"Plant ZCU Process Flow Mimic (ISA-5.1) — Operating Snapshot Hour {current_hour}",
-            font=dict(size=13, color=CHANDRA_THEME["text_secondary"]),
+            text=f"Plant ZCU 2-Loop Process P&ID (Gas Train + Lube Auxiliary System) — Hour {current_hour}",
+            font=dict(size=12, color=CHANDRA_THEME["text_secondary"]),
         ),
         paper_bgcolor=CHANDRA_THEME["card_bg"],
         plot_bgcolor=CHANDRA_THEME["card_bg"],
-        height=220,
-        margin=dict(l=20, r=20, t=40, b=20),
-        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=[0.1, 8.3]),
-        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=[0.2, 1.8]),
+        height=320,
+        margin=dict(l=20, r=20, t=35, b=20),
+        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=[0.2, 8.2]),
+        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=[-0.05, 2.7]),
     )
 
     return fig

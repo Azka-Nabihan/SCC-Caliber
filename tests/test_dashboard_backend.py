@@ -240,3 +240,72 @@ def test_dashboard_ui_apptest_headless():
         assert not at.exception
 
 
+def test_llm_diagnostic_reasoning_structure(data_provider):
+    """
+    Test 9: Verifies 3-stage diagnostic reasoning payload structure:
+    Stage 1: Multi-sensor observation, Stage 2: Mechanical inference, Stage 3: RCA correlation.
+    """
+    diag = data_provider.get_diagnostic_reasoning(current_hour=633)
+    assert diag["confidence_score"] == pytest.approx(94.2, abs=0.5)
+    assert "step_1_observation" in diag
+    assert "step_2_inference" in diag
+    assert "step_3_rca_correlation" in diag
+    assert "AR-2026-ZCU-0142" in diag["matched_incident"]
+    assert "VI-3201" in diag["step_1_observation"]
+    assert "babbitt" in diag["step_2_inference"].lower()
+    assert "HE-3301" in diag["step_3_rca_correlation"]
+
+
+def test_copilot_what_if_simulation(data_provider):
+    """
+    Test 10: Verifies that operational What-If queries return physics-grounded answers:
+    - 10% rate reduction
+    - Babbitt wipe-out risk
+    - Controlled shutdown protocol
+    """
+    # 1. Rate cut
+    res_rate = data_provider.run_copilot_simulation("Simulasi rate 10%", current_hour=633)
+    assert "18%" in res_rate["answer"] or "beban" in res_rate["answer"].lower()
+    assert "1.188M" in res_rate["answer"]
+
+    # 2. Babbitt risk
+    res_risk = data_provider.run_copilot_simulation("Risiko babbitt wipe-out", current_hour=633)
+    assert "AR-2026-ZCU-0142" in res_risk["answer"]
+    assert "32 jam" in res_risk["answer"].lower()
+
+    # 3. Shutdown protocol
+    res_sop = data_provider.run_copilot_simulation("Protokol shutdown 8 jam", current_hour=633)
+    assert "8.0 Jam" in res_sop["answer"] or "8 jam" in res_sop["answer"].lower()
+
+
+def test_sap_work_order_generation(data_provider):
+    """
+    Test 11: Verifies synthesis of authentic SAP PM work order:
+    Type M1, Order PM01, functional location, BoM parts list, safety permit.
+    """
+    sap = data_provider.generate_sap_work_order(current_hour=633)
+    assert sap["notification_id"] == "NOTIF-2026-PM-0419"
+    assert sap["work_order_id"] == "WO-8842109"
+    assert "PM01" in sap["order_type"]
+    assert "KO-3201" in sap["functional_location"]
+    assert len(sap["bill_of_materials"]) >= 3
+    assert any("BBR-3201-DE" in item["part_no"] for item in sap["bill_of_materials"])
+    assert "DISPATCHED" in sap["status"]
+
+
+def test_2loop_pid_mimic_traces(data_provider):
+    """
+    Test 12: Verifies that create_process_mimic_chart renders both main gas train and lube loop traces.
+    """
+    from src.app.charts import create_process_mimic_chart
+    snap = data_provider.get_hour_snapshot(633)
+    fig = create_process_mimic_chart(snap["top_contributors"], current_hour=633, current_vibration=snap["vibration"])
+    # Check that annotations include both loops
+    texts = [a.text for a in fig.layout.annotations if a.text]
+    joined_text = " ".join(texts)
+    assert "FEED GAS" in joined_text
+    assert "SUCTION DRUM" in joined_text
+    assert "KO-3201" in joined_text or "BEARING" in joined_text
+    assert "HE-3301" in joined_text or "LUBE OIL COOLER" in joined_text
+
+
