@@ -169,7 +169,9 @@ def test_charts_generation(data_provider):
     """
     from src.app.charts import (
         create_health_index_gauge,
+        create_compact_vibration_trend,
         create_telemetry_trend_chart,
+        create_process_mimic_chart,
         create_pid_deviation_graph,
         create_pf_escalation_chart,
     )
@@ -179,18 +181,30 @@ def test_charts_generation(data_provider):
     gauge_fig = create_health_index_gauge(hi_val=98.58, status_color="AMBER", operational_state=3)
     assert isinstance(gauge_fig, go.Figure)
 
-    # 2. Telemetry trend chart
+    # 2. Compact Vibration Trend (Tab 1 60% col)
     df = data_provider.load_timeseries_data()
+    compact_fig = create_compact_vibration_trend(df, current_hour=633)
+    assert isinstance(compact_fig, go.Figure)
+
+    # 3. Telemetry trend chart (Tab 2)
     trend_fig = create_telemetry_trend_chart(df, current_hour=633)
     assert isinstance(trend_fig, go.Figure)
     assert len(trend_fig.data) >= 2  # Vibration trace + GDN score trace
 
-    # 3. P&ID graph
+    # 4. Process Mimic Strip ISA-5.1 (Tab 2)
     snap633 = data_provider.get_hour_snapshot(633)
+    mimic_fig = create_process_mimic_chart(
+        top_contributors=snap633["top_contributors"],
+        current_hour=633,
+        current_vibration=snap633["vibration"],
+    )
+    assert isinstance(mimic_fig, go.Figure)
+
+    # 5. Backward-compatibility P&ID graph alias
     pid_fig = create_pid_deviation_graph(top_contributors=snap633["top_contributors"], current_hour=633)
     assert isinstance(pid_fig, go.Figure)
 
-    # 4. P-F Curve Escalation Chart
+    # 6. P-F Curve Escalation Chart
     pf_fig = create_pf_escalation_chart(current_action_hour=633)
     assert isinstance(pf_fig, go.Figure)
 
