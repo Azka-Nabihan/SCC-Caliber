@@ -528,7 +528,7 @@ def main():
 
         # Smooth Client-Side Turnaround Decision Escalation Simulator
         st.markdown("### Turnaround Decision Escalation Simulator (P-F Curve)")
-        st.caption("Interactive What-If turnaround response simulator with 60 FPS client-side smooth calculation:")
+        st.caption("Drag the intervention slider to evaluate the cost of delaying turnaround against projected downtime (8h vs 32h) and financial loss:")
 
         # Client-Side Interactive HTML Slider Widget (Smooth 60 FPS, Zero Server Round-Trip)
         components.html(
