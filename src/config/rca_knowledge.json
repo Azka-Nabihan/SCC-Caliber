@@ -1,0 +1,3094 @@
+{
+  "KO-3201": {
+    "tag_number": "KO-3201",
+    "equipment_name": "Cracked Gas Compressor",
+    "plant": "ZCU",
+    "eq_class": "A",
+    "discipline": "ROTARY",
+    "provenance_level": "FACT",
+    "process_chain": "Furnace Effluent -> Suction Knock-out Drum -> KO-3201 Compressor -> Downstream Fractionation",
+    "monitored_variables": [
+      {
+        "name": "DE Radial Vibration",
+        "unit": "µm",
+        "normal": "<45",
+        "alarm": "45–<75",
+        "trip": "≥75",
+        "weight": 30.0
+      },
+      {
+        "name": "Lube Oil Water Content",
+        "unit": "ppm",
+        "normal": "<500",
+        "alarm": "500–<1500",
+        "trip": "≥1500",
+        "weight": 35.0
+      },
+      {
+        "name": "Lube Oil Supply Pressure",
+        "unit": "barg",
+        "normal": ">1.4",
+        "alarm": "1.1–1.4",
+        "trip": "≤1.1",
+        "weight": 15.0
+      },
+      {
+        "name": "Bearing Metal Temperature",
+        "unit": "°C",
+        "normal": "<95",
+        "alarm": "95–<110",
+        "trip": "≥110",
+        "weight": 20.0
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Kebocoran tabung pendingin oli pelumas (lube-oil cooler tube leak) menyebabkan air pendingin merembes ke sistem minyak pelumas (1.800 ppm vs normal <500 ppm).",
+      "damage_mechanism": "Kontaminasi air mendegradasi kekuatan film minyak pelumas (oil film strength), memicu keausan kontak logam babbitt journal bearing dan eskalasi getaran radial poros.",
+      "systemic_latent_root_cause": "Ketiadaan instrumen pemantau online water-in-oil di DCS saat kejadian sehingga kontaminasi air tidak terdeteksi hingga terjadi lonjakan getaran mekanikal.",
+      "attribution_discipline": "ROTARY / MECHANICAL"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 1584.0,
+      "historical_downtime_hrs": 32.0,
+      "risk_score": 500.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Lakukan controlled shutdown / rate reduction pada kompresor KO-3201 untuk mencegah eskalasi keausan babbitt journal bearing.",
+        "timeframe": "< 30 menit",
+        "source": "RCA 2 Slide 2 / ZCU ChemE Sheet"
+      },
+      {
+        "step": 2,
+        "action": "Isolasi compression train yang terdampak dan amankan kestabilan proses downstream unit pemisahan olefin.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE Sheet Kolom 21"
+      },
+      {
+        "step": 3,
+        "action": "Ganti DE journal bearing, lakukan flushing total pada sistem lube-oil, dan plug tube cooler yang bocor.",
+        "timeframe": "Pekerjaan Darurat Lapangan",
+        "source": "RCA 2 Slide 2"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Plug dan uji ulang tabung lube-oil cooler yang bocor",
+        "type": "Korektif",
+        "pic": "STA-02",
+        "due_date": "2026-04-30",
+        "status": "Closed",
+        "source": "RCA 2 Slide 9"
+      },
+      {
+        "action": "Pasang sensor water-in-oil online transmitter ke DCS pada sistem pelumas KO-3201",
+        "type": "Korektif",
+        "pic": "REL-05",
+        "due_date": "2026-06-30",
+        "status": "In Progress",
+        "source": "RCA 2 Slide 9"
+      },
+      {
+        "action": "Retube lube-oil cooler pada turnaround (TA) berikutnya",
+        "type": "Proaktif",
+        "pic": "STA-02",
+        "due_date": "2026-10-31",
+        "status": "Open",
+        "source": "RCA 2 Slide 9"
+      },
+      {
+        "action": "Perketat alert getaran KO-3201 ke 45 µm dan perpendek siklus review tren",
+        "type": "Preventif",
+        "pic": "REL-05",
+        "due_date": "2026-05-30",
+        "status": "Closed",
+        "source": "RCA 2 Slide 10"
+      },
+      {
+        "action": "Tambahkan tren dP dan konduktivitas cooler ke dashboard reliability",
+        "type": "Preventif",
+        "pic": "REL-02",
+        "due_date": "2026-06-30",
+        "status": "Closed",
+        "source": "RCA 2 Slide 10"
+      }
+    ]
+  },
+  "KO-1172C": {
+    "tag_number": "KO-1172C",
+    "equipment_name": "Compressor",
+    "plant": "ZCU",
+    "eq_class": "A",
+    "discipline": "ROTARY",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "Upstream process gas / suction separator → KO-1172C compressor → Aftercooler / downstream gas separation or header",
+    "monitored_variables": [
+      {
+        "name": "Laju kebocoran",
+        "unit": "qualitative",
+        "normal": "No measurable/visible leak",
+        "alarm": "Detectable leak below site action limit",
+        "trip": "Sustained/hazardous leak; isolate",
+        "weight": 32.0
+      },
+      {
+        "name": "tekanan sistem seal",
+        "unit": "% design",
+        "normal": "within ±10% of design",
+        "alarm": "10–20% deviation from design",
+        "trip": ">20%",
+        "weight": 15.0
+      },
+      {
+        "name": "suhu seal",
+        "unit": "°C",
+        "normal": "<80",
+        "alarm": "80–<95",
+        "trip": "≥95",
+        "weight": 23.0
+      },
+      {
+        "name": "vibrasi",
+        "unit": "mm/s RMS",
+        "normal": "<4.5",
+        "alarm": "4.5–<7.1",
+        "trip": "≥7.1",
+        "weight": 15.0
+      },
+      {
+        "name": "tekanan suction/discharge.",
+        "unit": "% design",
+        "normal": "within ±10% of design",
+        "alarm": "10–20% deviation from design",
+        "trip": ">20%",
+        "weight": 15.0
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Mechanical Seal Leak",
+      "damage_mechanism": "Potensi keausan/kerusakan seal face, gangguan sistem sealing, misalignment, atau pelumasan/pendinginan seal yang tidak memadai.",
+      "systemic_latent_root_cause": "Perlu investigasi lanjutan dan verifikasi tren sensor riil",
+      "attribution_discipline": "ROT"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 24.35,
+      "historical_downtime_hrs": 0.6,
+      "risk_score": 4000.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Reduce pressure/load if possible, contain the leak, switch to standby equipment, and isolate the leaking machine if leakage is sustained or hazardous.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Inspeksi seal face, sleeve, seal-support/flush system, alignment, dan kondisi operasi; perbaiki penyebab terverifikasi dan lakukan leak test sebelum recommissioning.",
+        "type": "Preventif",
+        "pic": "REL-02",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "KO-4538B": {
+    "tag_number": "KO-4538B",
+    "equipment_name": "Compressor",
+    "plant": "ZCU",
+    "eq_class": "A",
+    "discipline": "ROTARY",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Cracking & Compression Train",
+    "monitored_variables": [
+      {
+        "name": "Operational Health Signal",
+        "unit": "%",
+        "normal": "Normal",
+        "alarm": "High",
+        "trip": "Trip",
+        "weight": 1.0
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Seal Leakage",
+      "damage_mechanism": "Potensi degradasi seal akibat keausan, vibrasi, misalignment, atau kondisi operasi di luar batas desain; penyebab belum terkonfirmasi.",
+      "systemic_latent_root_cause": "Perlu investigasi lanjutan dan verifikasi tren sensor riil",
+      "attribution_discipline": "ROT"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 32.29,
+      "historical_downtime_hrs": 1.0,
+      "risk_score": 40.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Reduce pressure/load if possible, contain the leak, switch to standby equipment, and isolate the leaking machine if leakage is sustained or hazardous.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Lakukan inspeksi terjadwal pada komponen kritis KO-4538B dan review batasan interlock pengaman.",
+        "type": "Preventif",
+        "pic": "STA-01",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "KO-5329A": {
+    "tag_number": "KO-5329A",
+    "equipment_name": "Compressor",
+    "plant": "ZCU",
+    "eq_class": "A",
+    "discipline": "ROTARY",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Cracking & Compression Train",
+    "monitored_variables": [
+      {
+        "name": "Vibrasi; shaft displacement/runout; beban dan kecepatan; suhu bearing; hasil NDT.",
+        "unit": "",
+        "normal": "",
+        "alarm": "",
+        "trip": "",
+        "weight": 0.2
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Shaft Crack",
+      "damage_mechanism": "Retak berpotensi berasal dari fatigue akibat tegangan siklik, konsentrasi tegangan, misalignment, atau unbalance. Konfirmasi melalui pemeriksaan material/NDT.",
+      "systemic_latent_root_cause": "Perlu investigasi lanjutan dan verifikasi tren sensor riil",
+      "attribution_discipline": "ROT"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 150.88,
+      "historical_downtime_hrs": 6.8,
+      "risk_score": 600.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Stop and isolate equipment; inhibit restart until shaft integrity is verified by approved NDT.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Lakukan NDT yang disetujui; evaluasi fatigue, runout, alignment, rotor balance, dan operating transient; ganti shaft bila crack terkonfirmasi dan revalidasi train.",
+        "type": "Preventif",
+        "pic": "REL-03",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "PM-4607": {
+    "tag_number": "PM-4607",
+    "equipment_name": "Motor-driven pump",
+    "plant": "ZCU",
+    "eq_class": "A",
+    "discipline": "ELECTRICAL",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Cracking & Compression Train",
+    "monitored_variables": [
+      {
+        "name": "Laju alir; tekanan suction/discharge; NPSH; vibrasi; efisiensi/arus motor.",
+        "unit": "",
+        "normal": "",
+        "alarm": "",
+        "trip": "",
+        "weight": 0.2
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Impeller Worn Out",
+      "damage_mechanism": "Potensi keausan akibat erosi/korosi, kavitasi, atau operasi jauh dari titik efisiensi terbaik (BEP); verifikasi pola kerusakan impeller dan kondisi suction.",
+      "systemic_latent_root_cause": "Perlu investigasi lanjutan dan verifikasi tren sensor riil",
+      "attribution_discipline": "ELE"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 311.94,
+      "historical_downtime_hrs": 10.8,
+      "risk_score": 60.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Check suction/discharge pressure, flow and vibration; avoid cavitation/overload; reduce rate or switch to standby if the equipment cannot maintain required duty safely.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Inspeksi keausan/clearance impeller dan evaluasi suction restriction, NPSH, flow, serta operating point terhadap BEP; repair/replace berdasarkan hasil inspeksi dan kriteria OEM.",
+        "type": "Preventif",
+        "pic": "INS-01",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "PM-3070": {
+    "tag_number": "PM-3070",
+    "equipment_name": "Motor-driven pump",
+    "plant": "ZCU",
+    "eq_class": "B",
+    "discipline": "ROTARY",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Cracking & Compression Train",
+    "monitored_variables": [
+      {
+        "name": "Vibrasi bearing; suhu bearing; kondisi pelumas; alignment; arus motor.",
+        "unit": "",
+        "normal": "",
+        "alarm": "",
+        "trip": "",
+        "weight": 0.2
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Bearing High Vibration",
+      "damage_mechanism": "Potensi bearing wear, lubrication deficiency, misalignment, unbalance, atau looseness mekanis.",
+      "systemic_latent_root_cause": "Perlu investigasi lanjutan dan verifikasi tren sensor riil",
+      "attribution_discipline": "ROT"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 135.14,
+      "historical_downtime_hrs": 7.8,
+      "risk_score": 200.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Verify the signal locally, check lubrication/temperature, reduce load if process permits, and perform controlled shutdown or switch to standby if vibration reaches critical level or continues rising.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Ambil vibration spectrum; inspeksi bearing, lubricant, alignment, soft-foot, foundation, dan coupling; koreksi penyebab terverifikasi dan tetapkan post-repair baseline.",
+        "type": "Preventif",
+        "pic": "REL-03",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "PM-4526B": {
+    "tag_number": "PM-4526B",
+    "equipment_name": "Motor-driven pump",
+    "plant": "ZCU",
+    "eq_class": "B",
+    "discipline": "ELECTRICAL",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Cracking & Compression Train",
+    "monitored_variables": [
+      {
+        "name": "Vibrasi; suhu bearing; arus motor; kondisi pelumas; alignment.",
+        "unit": "",
+        "normal": "",
+        "alarm": "",
+        "trip": "",
+        "weight": 0.2
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Bearing High Vibration",
+      "damage_mechanism": "Potensi keausan bearing, pelumasan tidak sesuai, misalignment, atau unbalance; gunakan temuan inspection report untuk menetapkan penyebab.",
+      "systemic_latent_root_cause": "Perlu investigasi lanjutan dan verifikasi tren sensor riil",
+      "attribution_discipline": "ELE"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 0.8,
+      "historical_downtime_hrs": 0.0,
+      "risk_score": 40.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Verify the signal locally, check lubrication/temperature, reduce load if process permits, and perform controlled shutdown or switch to standby if vibration reaches critical level or continues rising.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Gunakan inspection report untuk memverifikasi kondisi bearing, lubrication, alignment, dan mounting; tetapkan baseline vibration/temperature setelah perbaikan.",
+        "type": "Preventif",
+        "pic": "REL-02",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "PM-4339B": {
+    "tag_number": "PM-4339B",
+    "equipment_name": "Motor-driven pump",
+    "plant": "ZCU",
+    "eq_class": "A",
+    "discipline": "ELECTRICAL",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Cracking & Compression Train",
+    "monitored_variables": [
+      {
+        "name": "Alignment; vibrasi; suhu coupling; torsi/beban; kondisi elemen coupling.",
+        "unit": "",
+        "normal": "",
+        "alarm": "",
+        "trip": "",
+        "weight": 0.2
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Coupling Worn Out",
+      "damage_mechanism": "Potensi misalignment, keausan elemen coupling, overload, atau pemasangan/kompensasi ekspansi termal yang tidak tepat.",
+      "systemic_latent_root_cause": "Perlu investigasi lanjutan dan verifikasi tren sensor riil",
+      "attribution_discipline": "ELE"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 64.37,
+      "historical_downtime_hrs": 2.6,
+      "risk_score": 6.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Reduce load and verify vibration/coupling condition; perform a controlled stop if vibration or coupling temperature is abnormal. Do not restart with visibly damaged coupling.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Inspeksi coupling element, alignment, allowance thermal growth, soft-foot, dan load/transient; ganti elemen aus dan verifikasi alignment/guard sebelum start.",
+        "type": "Preventif",
+        "pic": "OPS-01",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "PM-2050": {
+    "tag_number": "PM-2050",
+    "equipment_name": "Motor-driven pump",
+    "plant": "ZCU",
+    "eq_class": "B",
+    "discipline": "ELECTRICAL",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Cracking & Compression Train",
+    "monitored_variables": [
+      {
+        "name": "Flow; suction/discharge pressure; NPSH; vibrasi; arus motor; efisiensi pompa.",
+        "unit": "",
+        "normal": "",
+        "alarm": "",
+        "trip": "",
+        "weight": 0.2
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Impeller Worn Out",
+      "damage_mechanism": "Potensi erosi/korosi, kavitasi, atau operasi di luar BEP; perlu pemeriksaan impeller dan data hidraulik untuk konfirmasi.",
+      "systemic_latent_root_cause": "Perlu investigasi lanjutan dan verifikasi tren sensor riil",
+      "attribution_discipline": "ELE"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 641.11,
+      "historical_downtime_hrs": 14.0,
+      "risk_score": 40000.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Check suction/discharge pressure, flow and vibration; avoid cavitation/overload; reduce rate or switch to standby if the equipment cannot maintain required duty safely.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Inspeksi dan ukur keausan impeller; cek NPSH, suction blockage, recirculation, dan operasi terhadap BEP; tentukan repair/replacement berdasarkan kondisi aktual dan limit OEM.",
+        "type": "Preventif",
+        "pic": "ROT-01",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "PM-3895A": {
+    "tag_number": "PM-3895A",
+    "equipment_name": "Motor-driven pump",
+    "plant": "ZCU",
+    "eq_class": "A",
+    "discipline": "ROTARY",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Cracking & Compression Train",
+    "monitored_variables": [
+      {
+        "name": "Vibrasi; shaft runout; beban/kecepatan; suhu bearing; hasil NDT.",
+        "unit": "",
+        "normal": "",
+        "alarm": "",
+        "trip": "",
+        "weight": 0.2
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Shaft Crack",
+      "damage_mechanism": "Potensi fatigue akibat beban siklik, misalignment, unbalance, atau konsentrasi tegangan; perlu NDT dan evaluasi riwayat operasi.",
+      "systemic_latent_root_cause": "Perlu investigasi lanjutan dan verifikasi tren sensor riil",
+      "attribution_discipline": "ROT"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 1.16,
+      "historical_downtime_hrs": 0.0,
+      "risk_score": 600.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Stop and isolate equipment; inhibit restart until shaft integrity is verified by approved NDT.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Lakukan failure investigation dan NDT yang disetujui; cek alignment, rotor balance, cyclic loading, dan histori start/stop; ganti shaft bila crack terkonfirmasi.",
+        "type": "Preventif",
+        "pic": "REL-02",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "BL-1631B": {
+    "tag_number": "BL-1631B",
+    "equipment_name": "Blower",
+    "plant": "ZCU",
+    "eq_class": "A",
+    "discipline": "ROTARY",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Cracking & Compression Train",
+    "monitored_variables": [
+      {
+        "name": "Differential pressure exchanger; duty/approach temperature; flow; suhu inlet/outlet; vibrasi blower.",
+        "unit": "",
+        "normal": "",
+        "alarm": "",
+        "trip": "",
+        "weight": 0.2
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Exchanger Fouling",
+      "damage_mechanism": "Insiden tercatat sebagai exchanger fouling, tetapi hubungan dengan blower belum jelas. Kemungkinan fouling pada cooler terkait atau salah klasifikasi equipment; verifikasi P&ID dan laporan.",
+      "systemic_latent_root_cause": "Perlu investigasi lanjutan dan verifikasi tren sensor riil",
+      "attribution_discipline": "ROT"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 72.96,
+      "historical_downtime_hrs": 4.0,
+      "risk_score": 4000.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Validate the affected tag/package, check dP/duty/temperature trend, reduce rate or bypass/switch spare if available when process limits are approached.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Jika cooler/exchanger terkait terkonfirmasi, lakukan trending dP/duty dan inspeksi deposit; cleaning menggunakan metode yang kompatibel dengan material/OEM.",
+        "type": "Preventif",
+        "pic": "ROT-01",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "BL-3912": {
+    "tag_number": "BL-3912",
+    "equipment_name": "Blower",
+    "plant": "ZCU",
+    "eq_class": "A",
+    "discipline": "ROTARY",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Cracking & Compression Train",
+    "monitored_variables": [
+      {
+        "name": "PV transmitter; deviasi terhadap alat referensi; sinyal 4–20 mA; alarm; tekanan/flow aktual.",
+        "unit": "",
+        "normal": "",
+        "alarm": "",
+        "trip": "",
+        "weight": 0.2
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Transmitter Error",
+      "damage_mechanism": "Potensi drift sensor, kegagalan transmitter/wiring, impulse line tersumbat, atau kesalahan kalibrasi/configuration.",
+      "systemic_latent_root_cause": "Perlu investigasi lanjutan dan verifikasi tren sensor riil",
+      "attribution_discipline": "ROT"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 253.74,
+      "historical_downtime_hrs": 7.4,
+      "risk_score": 6.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Cross-check against local/redundant measurement; place the loop in a safe manual/backup mode if needed and suppress only the proven-bad signal per site procedure.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Lakukan calibration/loop check; inspeksi wiring, impulse line, power, grounding, dan konfigurasi alarm; repair/replace instrument yang bermasalah.",
+        "type": "Preventif",
+        "pic": "REL-05",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "BL-4656C": {
+    "tag_number": "BL-4656C",
+    "equipment_name": "Blower",
+    "plant": "ZCU",
+    "eq_class": "A",
+    "discipline": "ROTARY",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Cracking & Compression Train",
+    "monitored_variables": [
+      {
+        "name": "Valve position/command; tekanan instrument air; valve travel; deviasi PV; waktu respons.",
+        "unit": "",
+        "normal": "",
+        "alarm": "",
+        "trip": "",
+        "weight": 0.2
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Control Valve Stuck",
+      "damage_mechanism": "Potensi sticking akibat friction/packing, deposit, korosi, actuator/positioner bermasalah, atau suplai instrument air tidak memadai.",
+      "systemic_latent_root_cause": "Perlu investigasi lanjutan dan verifikasi tren sensor riil",
+      "attribution_discipline": "ROT"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 123.74,
+      "historical_downtime_hrs": 2.7,
+      "risk_score": 400.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Verify command versus actual position and instrument-air supply; move the loop to safe manual/bypass mode if permitted and isolate the valve if it threatens process safety.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Lakukan stroke/response test; inspeksi stem, packing, actuator, positioner, dan deposit; kalibrasi/perbaiki sesuai OEM dan prosedur site.",
+        "type": "Preventif",
+        "pic": "STA-01",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "BL-2513A": {
+    "tag_number": "BL-2513A",
+    "equipment_name": "Blower",
+    "plant": "ZCU",
+    "eq_class": "A",
+    "discipline": "ROTARY",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Cracking & Compression Train",
+    "monitored_variables": [
+      {
+        "name": "Vibrasi; flow; tekanan; kecepatan; clearance impeller; suhu bearing.",
+        "unit": "",
+        "normal": "",
+        "alarm": "",
+        "trip": "",
+        "weight": 0.2
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Impeller Worn Out",
+      "damage_mechanism": "Potensi erosi, korosi, fouling/imbalance, atau operasi di luar rentang desain; perlu inspeksi permukaan dan clearance.",
+      "systemic_latent_root_cause": "Perlu investigasi lanjutan dan verifikasi tren sensor riil",
+      "attribution_discipline": "ROT"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 231.0,
+      "historical_downtime_hrs": 15.5,
+      "risk_score": 6.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Check suction/discharge pressure, flow and vibration; avoid cavitation/overload; reduce rate or switch to standby if the equipment cannot maintain required duty safely.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Inspeksi impeller, deposit, corrosion, clearance, dan balance; verifikasi operating point serta kondisi suction/discharge; repair/replace sesuai OEM.",
+        "type": "Preventif",
+        "pic": "ROT-03",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "BL-8124A": {
+    "tag_number": "BL-8124A",
+    "equipment_name": "Blower",
+    "plant": "ZCU",
+    "eq_class": "B",
+    "discipline": "ROTARY",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Cracking & Compression Train",
+    "monitored_variables": [
+      {
+        "name": "dP exchanger; duty; temperatur inlet/outlet; flow; vibrasi blower.",
+        "unit": "",
+        "normal": "",
+        "alarm": "",
+        "trip": "",
+        "weight": 0.2
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Exchanger Fouling",
+      "damage_mechanism": "Catatan exchanger fouling tidak langsung menjelaskan kegagalan blower. Perlu verifikasi apakah yang dimaksud cooler/blower package atau salah pemetaan tag.",
+      "systemic_latent_root_cause": "Perlu investigasi lanjutan dan verifikasi tren sensor riil",
+      "attribution_discipline": "ROT"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 211.03,
+      "historical_downtime_hrs": 11.2,
+      "risk_score": 40.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Validate the affected tag/package, check dP/duty/temperature trend, reduce rate or bypass/switch spare if available when process limits are approached.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Jika exchanger terkait terkonfirmasi, dokumentasikan dP/temperature/duty, inspeksi deposit, dan lakukan cleaning sesuai material/OEM.",
+        "type": "Preventif",
+        "pic": "ROT-01",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "PU-8189A": {
+    "tag_number": "PU-8189A",
+    "equipment_name": "Pump",
+    "plant": "ZCU",
+    "eq_class": "B",
+    "discipline": "ROTARY",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Cracking & Compression Train",
+    "monitored_variables": [
+      {
+        "name": "dP exchanger; duty; temperatur inlet/outlet; flow; suction/discharge pressure; vibrasi pompa.",
+        "unit": "",
+        "normal": "",
+        "alarm": "",
+        "trip": "",
+        "weight": 0.2
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Exchanger Fouling",
+      "damage_mechanism": "Insiden fouling exchanger pada record pump berpotensi menunjukkan cooler terkait atau ketidaksesuaian tag/klasifikasi; jangan tetapkan sebab sebelum verifikasi.",
+      "systemic_latent_root_cause": "Perlu investigasi lanjutan dan verifikasi tren sensor riil",
+      "attribution_discipline": "ROT"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 428.84,
+      "historical_downtime_hrs": 16.9,
+      "risk_score": 600.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Validate the affected tag/package, check dP/duty/temperature trend, reduce rate or bypass/switch spare if available when process limits are approached.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Jika exchanger terkait terkonfirmasi, evaluasi dP/duty dan lakukan cleaning yang sesuai; jika tidak, investigasi pump berdasarkan konteks equipment yang telah diverifikasi.",
+        "type": "Preventif",
+        "pic": "ELE-02",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "PU-5209B": {
+    "tag_number": "PU-5209B",
+    "equipment_name": "Pump",
+    "plant": "ZCU",
+    "eq_class": "A",
+    "discipline": "ROTARY",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Cracking & Compression Train",
+    "monitored_variables": [
+      {
+        "name": "Vibrasi gearbox (overall dan spectrum); suhu; kondisi oli/partikel aus; speed; alignment.",
+        "unit": "",
+        "normal": "",
+        "alarm": "",
+        "trip": "",
+        "weight": 0.2
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Gearbox High Vibration",
+      "damage_mechanism": "Potensi gear wear, misalignment, pelumasan buruk, gear mesh defect, atau looseness pada gearbox/fondasi.",
+      "systemic_latent_root_cause": "Perlu investigasi lanjutan dan verifikasi tren sensor riil",
+      "attribution_discipline": "ROT"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 1.43,
+      "historical_downtime_hrs": 0.0,
+      "risk_score": 60.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Verify the signal locally, check lubrication/temperature, reduce load if process permits, and perform controlled shutdown or switch to standby if vibration reaches critical level or continues rising.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Analisis oil sample dan vibration/gear-mesh spectrum; inspeksi backlash, alignment, mounting, dan gear wear; repair berdasarkan temuan OEM.",
+        "type": "Preventif",
+        "pic": "INS-02",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "PU-4041C": {
+    "tag_number": "PU-4041C",
+    "equipment_name": "Pump",
+    "plant": "ZCU",
+    "eq_class": "B",
+    "discipline": "ROTARY",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Cracking & Compression Train",
+    "monitored_variables": [
+      {
+        "name": "Valve leakage; posisi valve; tekanan upstream/downstream; flow; valve travel.",
+        "unit": "",
+        "normal": "",
+        "alarm": "",
+        "trip": "",
+        "weight": 0.2
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Control Valve Leakage",
+      "damage_mechanism": "Potensi seat/trim wear, deposit, korosi, actuator/positioner tidak mencapai shutoff, atau kondisi diferensial tekanan di luar kemampuan valve.",
+      "systemic_latent_root_cause": "Perlu investigasi lanjutan dan verifikasi tren sensor riil",
+      "attribution_discipline": "ROT"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 199.93,
+      "historical_downtime_hrs": 7.3,
+      "risk_score": 400.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Verify leakage and upstream/downstream pressure; reduce differential pressure if feasible and isolate/bypass the valve when leakage affects safe operation.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Lakukan seat-leakage/functional test; inspeksi trim, seat, actuator, dan positioner; repair sesuai valve OEM.",
+        "type": "Preventif",
+        "pic": "REL-03",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "PU-6682": {
+    "tag_number": "PU-6682",
+    "equipment_name": "Pump",
+    "plant": "ZCU",
+    "eq_class": "A",
+    "discipline": "ROTARY",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Cracking & Compression Train",
+    "monitored_variables": [
+      {
+        "name": "Arus dan tegangan tiap fasa; daya; suhu winding/bearing; flow; discharge pressure.",
+        "unit": "",
+        "normal": "",
+        "alarm": "",
+        "trip": "",
+        "weight": 0.2
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Motor Low Performance",
+      "damage_mechanism": "Potensi tegangan tidak seimbang/rendah, overload, masalah winding, pendinginan buruk, atau beban pompa berlebih.",
+      "systemic_latent_root_cause": "Perlu investigasi lanjutan dan verifikasi tren sensor riil",
+      "attribution_discipline": "ROT"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 252.4,
+      "historical_downtime_hrs": 6.8,
+      "risk_score": 60.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Check phase voltage/current and temperature; reduce mechanical load or switch to standby; stop the motor if overload/protection limits are approached.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Lakukan winding/insulation dan electrical checks; koreksi masalah supply/load/cooling berdasarkan temuan terverifikasi dan persyaratan OEM.",
+        "type": "Preventif",
+        "pic": "STA-02",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "SW-6198B": {
+    "tag_number": "SW-6198B",
+    "equipment_name": "Switchgear",
+    "plant": "ZCU",
+    "eq_class": "A",
+    "discipline": "ELECTRICAL",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Cracking & Compression Train",
+    "monitored_variables": [
+      {
+        "name": "Waktu operasi breaker; arus motor mekanisme; vibrasi/gerak mekanisme; tegangan kontrol; hasil inspeksi.",
+        "unit": "",
+        "normal": "",
+        "alarm": "",
+        "trip": "",
+        "weight": 0.2
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Gearbox High Vibration",
+      "damage_mechanism": "Istilah gearbox high vibration tidak lazim untuk switchgear; kemungkinan mekanisme operasi motor/gear mekanisme breaker atau kesalahan klasifikasi. Verifikasi aset.",
+      "systemic_latent_root_cause": "Perlu investigasi lanjutan dan verifikasi tren sensor riil",
+      "attribution_discipline": "ELE"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 117.16,
+      "historical_downtime_hrs": 2.8,
+      "risk_score": 2000.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Verify the signal locally, check lubrication/temperature, reduce load if process permits, and perform controlled shutdown or switch to standby if vibration reaches critical level or continues rising.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Inspeksi mechanism, lubrication, dan alignment; lakukan functional/timing test menggunakan prosedur OEM/IEC/IEEE switchgear yang berlaku.",
+        "type": "Preventif",
+        "pic": "REL-03",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "SW-3050": {
+    "tag_number": "SW-3050",
+    "equipment_name": "Switchgear",
+    "plant": "ZCU",
+    "eq_class": "A",
+    "discipline": "ELECTRICAL",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Cracking & Compression Train",
+    "monitored_variables": [
+      {
+        "name": "Kondisi coupling/linkage; arus motor operator; waktu operasi; jumlah operasi; hasil functional test.",
+        "unit": "",
+        "normal": "",
+        "alarm": "",
+        "trip": "",
+        "weight": 0.2
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Coupling Worn Out",
+      "damage_mechanism": "Kemungkinan keausan coupling pada mekanisme motor/operator breaker; pastikan komponen dan tag sesuai laporan pemeliharaan.",
+      "systemic_latent_root_cause": "Perlu investigasi lanjutan dan verifikasi tren sensor riil",
+      "attribution_discipline": "ELE"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 0.22,
+      "historical_downtime_hrs": 0.0,
+      "risk_score": 200.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Reduce load and verify vibration/coupling condition; perform a controlled stop if vibration or coupling temperature is abnormal. Do not restart with visibly damaged coupling.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Konfirmasi lokasi coupling/linkage; inspeksi wear, alignment, dan lubrication; lakukan functional test sesuai OEM/IEC/IEEE switchgear.",
+        "type": "Preventif",
+        "pic": "ELE-02",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "SW-8737A": {
+    "tag_number": "SW-8737A",
+    "equipment_name": "Switchgear",
+    "plant": "ZCU",
+    "eq_class": "B",
+    "discipline": "ELECTRICAL",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Cracking & Compression Train",
+    "monitored_variables": [
+      {
+        "name": "Vibrasi mekanisme/motor; suhu bearing; arus motor; waktu operasi; kondisi pelumasan.",
+        "unit": "",
+        "normal": "",
+        "alarm": "",
+        "trip": "",
+        "weight": 0.2
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Bearing High Vibration",
+      "damage_mechanism": "Bila terdapat motor-operated mechanism, potensi bearing wear, pelumasan buruk, misalignment, atau looseness; validasi lokasi bearing pada peralatan.",
+      "systemic_latent_root_cause": "Perlu investigasi lanjutan dan verifikasi tren sensor riil",
+      "attribution_discipline": "ELE"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 97.86,
+      "historical_downtime_hrs": 6.0,
+      "risk_score": 600.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Verify the signal locally, check lubrication/temperature, reduce load if process permits, and perform controlled shutdown or switch to standby if vibration reaches critical level or continues rising.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Inspeksi bearing/mechanism, lubrication, dan kondisi motor; lakukan functional/timing test sesuai OEM dan standar switchgear yang berlaku.",
+        "type": "Preventif",
+        "pic": "STA-02",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "SW-8132A": {
+    "tag_number": "SW-8132A",
+    "equipment_name": "Switchgear",
+    "plant": "ZCU",
+    "eq_class": "A",
+    "discipline": "ELECTRICAL",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Cracking & Compression Train",
+    "monitored_variables": [
+      {
+        "name": "Hasil NDT; waktu operasi; torsi/arus operator; kondisi mekanisme; jumlah operasi.",
+        "unit": "",
+        "normal": "",
+        "alarm": "",
+        "trip": "",
+        "weight": 0.2
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Shaft Crack",
+      "damage_mechanism": "Jika shaft merupakan bagian mekanisme penggerak, retak dapat terkait fatigue, beban siklik, atau konsentrasi tegangan; verifikasi komponen dan NDT.",
+      "systemic_latent_root_cause": "Perlu investigasi lanjutan dan verifikasi tren sensor riil",
+      "attribution_discipline": "ELE"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 361.23,
+      "historical_downtime_hrs": 10.6,
+      "risk_score": 60.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Stop and isolate equipment; inhibit restart until shaft integrity is verified by approved NDT.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Konfirmasi lokasi shaft; lakukan NDT yang disetujui, ganti bila crack terkonfirmasi, kemudian lakukan functional test sesuai OEM dan standar switchgear.",
+        "type": "Preventif",
+        "pic": "STA-02",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "FN-7628A": {
+    "tag_number": "FN-7628A",
+    "equipment_name": "Fan",
+    "plant": "ZCU",
+    "eq_class": "B",
+    "discipline": "ROTARY",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Cracking & Compression Train",
+    "monitored_variables": [
+      {
+        "name": "Vibrasi; shaft runout; kecepatan; beban; suhu bearing; hasil NDT.",
+        "unit": "",
+        "normal": "",
+        "alarm": "",
+        "trip": "",
+        "weight": 0.2
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Shaft Crack",
+      "damage_mechanism": "Potensi fatigue akibat beban siklik, unbalance, misalignment, atau konsentrasi tegangan; perlu konfirmasi melalui inspeksi/NDT.",
+      "systemic_latent_root_cause": "Perlu investigasi lanjutan dan verifikasi tren sensor riil",
+      "attribution_discipline": "ROT"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 37.89,
+      "historical_downtime_hrs": 1.6,
+      "risk_score": 400.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Stop and isolate equipment; inhibit restart until shaft integrity is verified by approved NDT.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Lakukan NDT shaft yang disetujui; inspeksi alignment, impeller balance, bearing condition, serta histori start/stop/load; ganti shaft bila crack terkonfirmasi.",
+        "type": "Preventif",
+        "pic": "ELE-02",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "FN-5984": {
+    "tag_number": "FN-5984",
+    "equipment_name": "Fan",
+    "plant": "ZCU",
+    "eq_class": "A",
+    "discipline": "ROTARY",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Cracking & Compression Train",
+    "monitored_variables": [
+      {
+        "name": "dP exchanger; duty; temperatur inlet/outlet; airflow; fan vibration; motor current.",
+        "unit": "",
+        "normal": "",
+        "alarm": "",
+        "trip": "",
+        "weight": 0.2
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Exchanger Fouling",
+      "damage_mechanism": "Fouling exchanger tidak langsung menjelaskan fan failure; mungkin cooler terkait fan atau kesalahan pemetaan aset. Perlu verifikasi P&ID/work order.",
+      "systemic_latent_root_cause": "Perlu investigasi lanjutan dan verifikasi tren sensor riil",
+      "attribution_discipline": "ROT"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 46.4,
+      "historical_downtime_hrs": 2.0,
+      "risk_score": 400.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Validate the affected tag/package, check dP/duty/temperature trend, reduce rate or bypass/switch spare if available when process limits are approached.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Jika terkonfirmasi, inspeksi bundle, lakukan trending dP/duty/airflow, dan cleaning sesuai persyaratan material/OEM.",
+        "type": "Preventif",
+        "pic": "ELE-01",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "TR-8775A": {
+    "tag_number": "TR-8775A",
+    "equipment_name": "Transformer",
+    "plant": "ZCU",
+    "eq_class": "A",
+    "discipline": "ELECTRICAL",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Cracking & Compression Train",
+    "monitored_variables": [
+      {
+        "name": "Level dan kebocoran minyak; suhu minyak; tekanan; kondisi gasket; hasil inspeksi minyak.",
+        "unit": "",
+        "normal": "",
+        "alarm": "",
+        "trip": "",
+        "weight": 0.2
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Seal Leakage",
+      "damage_mechanism": "Potensi degradasi gasket/seal, penuaan elastomer, sambungan longgar, atau tekanan/temperatur minyak; lokasi kebocoran perlu dipastikan.",
+      "systemic_latent_root_cause": "Perlu investigasi lanjutan dan verifikasi tren sensor riil",
+      "attribution_discipline": "ELE"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 1.39,
+      "historical_downtime_hrs": 0.0,
+      "risk_score": 40.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Identify leak point, check oil level and temperature, contain leakage, and isolate/reduce load if oil level or temperature becomes unsafe.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Inspeksi gasket, bushing, dan connection; repair kebocoran terverifikasi, lakukan leak check, dan evaluasi ulang oil condition sesuai OEM.",
+        "type": "Preventif",
+        "pic": "OPS-01",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "TR-6290": {
+    "tag_number": "TR-6290",
+    "equipment_name": "Transformer",
+    "plant": "ZCU",
+    "eq_class": "A",
+    "discipline": "ELECTRICAL",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Cracking & Compression Train",
+    "monitored_variables": [
+      {
+        "name": "Arus/tegangan motor kipas atau pompa pendingin; suhu minyak/winding; status pendinginan; alarm proteksi.",
+        "unit": "",
+        "normal": "",
+        "alarm": "",
+        "trip": "",
+        "weight": 0.2
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Motor Low Performance",
+      "damage_mechanism": "Untuk transformer, istilah motor low performance tidak sesuai secara langsung. Mungkin merujuk motor kipas/pompa pendingin atau salah klasifikasi incident; verifikasi laporan.",
+      "systemic_latent_root_cause": "Perlu investigasi lanjutan dan verifikasi tren sensor riil",
+      "attribution_discipline": "ELE"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 61.25,
+      "historical_downtime_hrs": 2.6,
+      "risk_score": 6.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Start standby cooling if available, verify cooling-motor supply/current and reduce transformer load while closely monitoring oil/winding temperature.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Uji cooling-motor circuit, contactor/protection, dan fungsi cooling; koreksi fault terverifikasi serta monitor oil/winding temperature.",
+        "type": "Preventif",
+        "pic": "STA-01",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "PZ-2154": {
+    "tag_number": "PZ-2154",
+    "equipment_name": "Pompa dosing/injeksi",
+    "plant": "ZCU",
+    "eq_class": "A",
+    "discipline": "STATIC",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Thermal & Reaction Train",
+    "monitored_variables": [
+      {
+        "name": "tekanan discharge saat start-up",
+        "unit": "unit",
+        "normal": "Normal",
+        "alarm": "High",
+        "trip": "Trip",
+        "weight": 1.0
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Gasket leakage",
+      "damage_mechanism": "gasket flange pump head/discharge bocor saat start-up. Kemungkinan torsi baut tidak seragam/relaksasi gasket akibat siklus termal, atau material gasket tidak tahan bahan kimia yang diinjeksi.",
+      "systemic_latent_root_cause": "Diperlukan verifikasi inspeksi NDT dan pemantauan kondisi periodik",
+      "attribution_discipline": "INS"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 106.95,
+      "historical_downtime_hrs": 1.8,
+      "risk_score": 40.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Lakukan pengecekan visual di lapangan pada PZ-2154 dan isolasi bila ada kebocoran proses.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Pengencangan baut terkontrol (ASME PCC-1); pilih gasket sesuai tabel kompatibilitas kimia; leak test masuk checklist pre-start-up. AI: checklist start-up otomatis + tampilkan insiden serupa.",
+        "type": "Preventif",
+        "pic": "ELE-01",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "PZ-4479": {
+    "tag_number": "PZ-4479",
+    "equipment_name": "Pompa dosing/injeksi",
+    "plant": "ZCU",
+    "eq_class": "A",
+    "discipline": "STATIC",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Thermal & Reaction Train",
+    "monitored_variables": [
+      {
+        "name": "Level tangki kimia (low-low); tekanan suction/NPSH; aliran quench/flush seal",
+        "unit": "unit",
+        "normal": "Normal",
+        "alarm": "High",
+        "trip": "Trip",
+        "weight": 1.0
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Mechanical seal leak",
+      "damage_mechanism": "seal berjalan kering atau muka seal rusak oleh kristal bahan kimia (mis. caustic), dipicu level tangki kimia rendah / suction tersumbat.",
+      "systemic_latent_root_cause": "Diperlukan verifikasi inspeksi NDT dan pemantauan kondisi periodik",
+      "attribution_discipline": "INS"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 354.37,
+      "historical_downtime_hrs": 19.6,
+      "risk_score": 40.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Lakukan pengecekan visual di lapangan pada PZ-4479 dan isolasi bila ada kebocoran proses.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Interlock low-low level tangki → stop pompa; seal dengan quench untuk fluida yang mengkristal (API 682 Plan 62); alarm tekanan suction. AI: anomaly detection tekanan discharge + laju dosis.",
+        "type": "Preventif",
+        "pic": "ROT-03",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "PZ-7199": {
+    "tag_number": "PZ-7199",
+    "equipment_name": "Pompa dosing/injeksi",
+    "plant": "ZCU",
+    "eq_class": "A",
+    "discipline": "STATIC",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Thermal & Reaction Train",
+    "monitored_variables": [
+      {
+        "name": "Tekanan discharge vs setting relief valve; dP titik injeksi; material elastomer seal",
+        "unit": "unit",
+        "normal": "Normal",
+        "alarm": "High",
+        "trip": "Trip",
+        "weight": 1.0
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Seal leakage",
+      "damage_mechanism": "overpressure di discharge (titik injeksi/quill tersumbat, relief valve tidak bekerja) atau elastomer seal terserang bahan kimia.",
+      "systemic_latent_root_cause": "Diperlukan verifikasi inspeksi NDT dan pemantauan kondisi periodik",
+      "attribution_discipline": "INS"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 375.48,
+      "historical_downtime_hrs": 11.1,
+      "risk_score": 400.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Lakukan pengecekan visual di lapangan pada PZ-7199 dan isolasi bila ada kebocoran proses.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Uji berkala relief/back-pressure valve; bersihkan injection quill terjadwal; ganti elastomer sesuai kompatibilitas kimia. AI: tren tekanan discharge naik = sumbatan quill.",
+        "type": "Preventif",
+        "pic": "REL-02",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "PZ-8690B": {
+    "tag_number": "PZ-8690B",
+    "equipment_name": "Pompa dosing/injeksi",
+    "plant": "ZCU",
+    "eq_class": "A",
+    "discipline": "STATIC",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Thermal & Reaction Train",
+    "monitored_variables": [
+      {
+        "name": "Arus motor; laju stroke aktual vs setpoint; tekanan discharge; suhu winding",
+        "unit": "unit",
+        "normal": "Normal",
+        "alarm": "High",
+        "trip": "Trip",
+        "weight": 1.0
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Motor Low Performance",
+      "damage_mechanism": "motor kelebihan beban karena tekanan discharge tinggi (titik injeksi tersumbat) atau degradasi winding/VFD, sehingga laju stroke turun di bawah setpoint.",
+      "systemic_latent_root_cause": "Diperlukan verifikasi inspeksi NDT dan pemantauan kondisi periodik",
+      "attribution_discipline": "INS"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 234.65,
+      "historical_downtime_hrs": 7.5,
+      "risk_score": 40.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Lakukan pengecekan visual di lapangan pada PZ-8690B dan isolasi bila ada kebocoran proses.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Monitor arus & suhu motor; insulation resistance test berkala; verifikasi laju dosis aktual (calibration column/flow meter). AI: deteksi gap setpoint vs aktual.",
+        "type": "Preventif",
+        "pic": "STA-02",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "PZ-1094": {
+    "tag_number": "PZ-1094",
+    "equipment_name": "Pompa dosing/injeksi",
+    "plant": "ZCU",
+    "eq_class": "A",
+    "discipline": "STATIC",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Thermal & Reaction Train",
+    "monitored_variables": [
+      {
+        "name": "Suhu bearing; vibrasi; kondisi oli gearbox; interval ganti oli",
+        "unit": "unit",
+        "normal": "Normal",
+        "alarm": "High",
+        "trip": "Trip",
+        "weight": 1.0
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Bearing worn out",
+      "damage_mechanism": "bearing crank/gearbox aus karena oli pelumas terdegradasi/terkontaminasi dan interval ganti oli tidak berbasis kondisi.",
+      "systemic_latent_root_cause": "Diperlukan verifikasi inspeksi NDT dan pemantauan kondisi periodik",
+      "attribution_discipline": "INS"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 193.09,
+      "historical_downtime_hrs": 4.2,
+      "risk_score": 40.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Lakukan pengecekan visual di lapangan pada PZ-1094 dan isolasi bila ada kebocoran proses.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Ganti oli berbasis kondisi (analisis oli); masukkan pompa dosing ke route vibrasi/termografi. AI: tren suhu + vibrasi → RUL bearing.",
+        "type": "Preventif",
+        "pic": "REL-03",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "PZ-4712": {
+    "tag_number": "PZ-4712",
+    "equipment_name": "Pompa dosing/injeksi",
+    "plant": "ZCU",
+    "eq_class": "B",
+    "discipline": "STATIC",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Thermal & Reaction Train",
+    "monitored_variables": [
+      {
+        "name": "Dosis aktual (ppm) vs laju feed; dP & duty exchanger hilir",
+        "unit": "unit",
+        "normal": "Normal",
+        "alarm": "High",
+        "trip": "Trip",
+        "weight": 1.0
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Exchanger Fouling",
+      "damage_mechanism": "Pompa tidak punya tube bundle: kemungkinan salah input, atau fouling terjadi di exchanger hilir karena dosis antifoulant kurang (pompa under-dosing).",
+      "systemic_latent_root_cause": "Diperlukan verifikasi inspeksi NDT dan pemantauan kondisi periodik",
+      "attribution_discipline": "INS"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 295.3,
+      "historical_downtime_hrs": 9.6,
+      "risk_score": 400.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Lakukan pengecekan visual di lapangan pada PZ-4712 dan isolasi bila ada kebocoran proses.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Kontrol rasio: dosis mengikuti laju feed; verifikasi dosis aktual; tautkan ke KPI fouling HE (dP, duty). AI: korelasi dosis vs laju fouling. Validasi ulang data insiden.",
+        "type": "Preventif",
+        "pic": "ELE-02",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "PZ-2759": {
+    "tag_number": "PZ-2759",
+    "equipment_name": "Pompa dosing/injeksi",
+    "plant": "ZCU",
+    "eq_class": "A",
+    "discipline": "STATIC",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Thermal & Reaction Train",
+    "monitored_variables": [
+      {
+        "name": "Level tangki kimia; tekanan discharge; umur seal",
+        "unit": "unit",
+        "normal": "Normal",
+        "alarm": "High",
+        "trip": "Trip",
+        "weight": 1.0
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Seal leakage",
+      "damage_mechanism": "pola sama dengan PZ-4479/7199 (kegagalan seal berulang). Risk score 6 tidak konsisten dengan Pre-Risk IV (umumnya 40–60).",
+      "systemic_latent_root_cause": "Diperlukan verifikasi inspeksi NDT dan pemantauan kondisi periodik",
+      "attribution_discipline": "INS"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 53.4,
+      "historical_downtime_hrs": 2.2,
+      "risk_score": 6.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Lakukan pengecekan visual di lapangan pada PZ-2759 dan isolasi bila ada kebocoran proses.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Perlakukan sebagai bad actor fleet: standar seal & proteksi dry-run untuk semua pompa dosing. Koreksi risk score.",
+        "type": "Preventif",
+        "pic": "ROT-01",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "PZ-7507": {
+    "tag_number": "PZ-7507",
+    "equipment_name": "Pompa dosing/injeksi",
+    "plant": "ZCU",
+    "eq_class": "B",
+    "discipline": "STATIC",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Thermal & Reaction Train",
+    "monitored_variables": [
+      {
+        "name": "Vibrasi motor; suhu motor; kondisi cover fan",
+        "unit": "unit",
+        "normal": "Normal",
+        "alarm": "High",
+        "trip": "Trip",
+        "weight": 1.0
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Blade breakage",
+      "damage_mechanism": "Pompa dosing tidak punya blade: kemungkinan blade fan pendingin motor patah (fatigue), atau salah input komponen.",
+      "systemic_latent_root_cause": "Diperlukan verifikasi inspeksi NDT dan pemantauan kondisi periodik",
+      "attribution_discipline": "INS"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 507.96,
+      "historical_downtime_hrs": 13.6,
+      "risk_score": 200.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Lakukan pengecekan visual di lapangan pada PZ-7507 dan isolasi bila ada kebocoran proses.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Inspeksi fan motor tiap PM; alarm suhu motor. Validasi ulang komponen di database.",
+        "type": "Preventif",
+        "pic": "ROT-02",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "CD-8154": {
+    "tag_number": "CD-8154",
+    "equipment_name": "Air-cooled condenser / fin-fan (asumsi)",
+    "plant": "ZCU",
+    "eq_class": "A",
+    "discipline": "STATIC",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Thermal & Reaction Train",
+    "monitored_variables": [
+      {
+        "name": "Vibrasi fan; pitch blade; inspeksi visual",
+        "unit": "unit",
+        "normal": "Normal",
+        "alarm": "High",
+        "trip": "Trip",
+        "weight": 1.0
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Blade Breakage",
+      "damage_mechanism": "Hipotesis: blade fan fin-fan patah karena fatigue (resonansi/pitch tidak seragam) atau korosi.",
+      "systemic_latent_root_cause": "Diperlukan verifikasi inspeksi NDT dan pemantauan kondisi periodik",
+      "attribution_discipline": "STA"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 78.97,
+      "historical_downtime_hrs": 4.7,
+      "risk_score": 600.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Lakukan pengecekan visual di lapangan pada CD-8154 dan isolasi bila ada kebocoran proses.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Inspeksi & set pitch blade tiap PM; NDT hub/blade; vibration switch.",
+        "type": "Preventif",
+        "pic": "REL-02",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "CD-7117C": {
+    "tag_number": "CD-7117C",
+    "equipment_name": "Air-cooled condenser / fin-fan (asumsi)",
+    "plant": "ZCU",
+    "eq_class": "B",
+    "discipline": "STATIC",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Thermal & Reaction Train",
+    "monitored_variables": [
+      {
+        "name": "Posisi valve vs flow; jumlah siklus; kebocoran packing",
+        "unit": "unit",
+        "normal": "Normal",
+        "alarm": "High",
+        "trip": "Trip",
+        "weight": 1.0
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Control Valve Leakage",
+      "damage_mechanism": "Hipotesis: seat/trim tererosi atau packing aus karena jumlah siklus tinggi / fluida erosif.",
+      "systemic_latent_root_cause": "Diperlukan verifikasi inspeksi NDT dan pemantauan kondisi periodik",
+      "attribution_discipline": "STA"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 169.73,
+      "historical_downtime_hrs": 5.1,
+      "risk_score": 6.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Lakukan pengecekan visual di lapangan pada CD-7117C dan isolasi bila ada kebocoran proses.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Diagnostik positioner; repacking terjadwal; upgrade material trim.",
+        "type": "Preventif",
+        "pic": "REL-03",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "CD-6611": {
+    "tag_number": "CD-6611",
+    "equipment_name": "Air-cooled condenser / fin-fan (asumsi)",
+    "plant": "ZCU",
+    "eq_class": "B",
+    "discipline": "STATIC",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Thermal & Reaction Train",
+    "monitored_variables": [
+      {
+        "name": "Torsi baut plug/header; siklus termal",
+        "unit": "unit",
+        "normal": "Normal",
+        "alarm": "High",
+        "trip": "Trip",
+        "weight": 1.0
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Seal Leakage",
+      "damage_mechanism": "Hipotesis: seal/gasket header box fin-fan bocor karena siklus termal.",
+      "systemic_latent_root_cause": "Diperlukan verifikasi inspeksi NDT dan pemantauan kondisi periodik",
+      "attribution_discipline": "STA"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 202.81,
+      "historical_downtime_hrs": 4.9,
+      "risk_score": 60.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Lakukan pengecekan visual di lapangan pada CD-6611 dan isolasi bila ada kebocoran proses.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Pengencangan terkontrol (ASME PCC-1); leak check.",
+        "type": "Preventif",
+        "pic": "INS-01",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "CD-5263B": {
+    "tag_number": "CD-5263B",
+    "equipment_name": "Air-cooled condenser / fin-fan (asumsi)",
+    "plant": "ZCU",
+    "eq_class": "A",
+    "discipline": "STATIC",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Thermal & Reaction Train",
+    "monitored_variables": [
+      {
+        "name": "Posisi valve vs flow; jumlah siklus; kebocoran packing",
+        "unit": "unit",
+        "normal": "Normal",
+        "alarm": "High",
+        "trip": "Trip",
+        "weight": 1.0
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Control Valve Leakage",
+      "damage_mechanism": "Hipotesis: seat/trim tererosi atau packing aus karena jumlah siklus tinggi / fluida erosif.",
+      "systemic_latent_root_cause": "Diperlukan verifikasi inspeksi NDT dan pemantauan kondisi periodik",
+      "attribution_discipline": "STA"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 90.05,
+      "historical_downtime_hrs": 1.6,
+      "risk_score": 400.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Lakukan pengecekan visual di lapangan pada CD-5263B dan isolasi bila ada kebocoran proses.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Diagnostik positioner; repacking terjadwal; upgrade material trim.",
+        "type": "Preventif",
+        "pic": "INS-01",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "CD-7057A": {
+    "tag_number": "CD-7057A",
+    "equipment_name": "Air-cooled condenser / fin-fan (asumsi)",
+    "plant": "ZCU",
+    "eq_class": "A",
+    "discipline": "STATIC",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Thermal & Reaction Train",
+    "monitored_variables": [
+      {
+        "name": "Posisi valve vs flow; jumlah siklus; kebocoran packing",
+        "unit": "unit",
+        "normal": "Normal",
+        "alarm": "High",
+        "trip": "Trip",
+        "weight": 1.0
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Control Valve Leakage",
+      "damage_mechanism": "Hipotesis: seat/trim tererosi atau packing aus karena jumlah siklus tinggi / fluida erosif.",
+      "systemic_latent_root_cause": "Diperlukan verifikasi inspeksi NDT dan pemantauan kondisi periodik",
+      "attribution_discipline": "STA"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 122.14,
+      "historical_downtime_hrs": 3.4,
+      "risk_score": 60.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Lakukan pengecekan visual di lapangan pada CD-7057A dan isolasi bila ada kebocoran proses.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Diagnostik positioner; repacking terjadwal; upgrade material trim.",
+        "type": "Preventif",
+        "pic": "ROT-02",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "CD-3123": {
+    "tag_number": "CD-3123",
+    "equipment_name": "Air-cooled condenser / fin-fan (asumsi)",
+    "plant": "ZCU",
+    "eq_class": "B",
+    "discipline": "STATIC",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Thermal & Reaction Train",
+    "monitored_variables": [
+      {
+        "name": "Torsi baut plug/header; siklus termal",
+        "unit": "unit",
+        "normal": "Normal",
+        "alarm": "High",
+        "trip": "Trip",
+        "weight": 1.0
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Seal Leakage",
+      "damage_mechanism": "Hipotesis: seal/gasket header box fin-fan bocor karena siklus termal.",
+      "systemic_latent_root_cause": "Diperlukan verifikasi inspeksi NDT dan pemantauan kondisi periodik",
+      "attribution_discipline": "STA"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 232.46,
+      "historical_downtime_hrs": 4.9,
+      "risk_score": 200.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Lakukan pengecekan visual di lapangan pada CD-3123 dan isolasi bila ada kebocoran proses.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Pengencangan terkontrol (ASME PCC-1); leak check.",
+        "type": "Preventif",
+        "pic": "REL-03",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "HE-3296B": {
+    "tag_number": "HE-3296B",
+    "equipment_name": "Shell & tube heat exchanger",
+    "plant": "ZCU",
+    "eq_class": "B",
+    "discipline": "STATIC",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Thermal & Reaction Train",
+    "monitored_variables": [
+      {
+        "name": "Kecepatan shell-side vs batas TEMA; vibrasi/noise exchanger",
+        "unit": "unit",
+        "normal": "Normal",
+        "alarm": "High",
+        "trip": "Trip",
+        "weight": 1.0
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Bearing High Vibration",
+      "damage_mechanism": "Shell & tube tidak punya bearing. Kemungkinan salah input, atau vibrasi tube bundle akibat flow-induced vibration (vortex shedding) bila kecepatan shell-side tinggi.",
+      "systemic_latent_root_cause": "Diperlukan verifikasi inspeksi NDT dan pemantauan kondisi periodik",
+      "attribution_discipline": "STA"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 95.24,
+      "historical_downtime_hrs": 2.6,
+      "risk_score": 60.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Lakukan pengecekan visual di lapangan pada HE-3296B dan isolasi bila ada kebocoran proses.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Validasi data; bila flow-induced: cek kecepatan cross-flow & baffle (TEMA).",
+        "type": "Preventif",
+        "pic": "ROT-02",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "HE-5734C": {
+    "tag_number": "HE-5734C",
+    "equipment_name": "Shell & tube heat exchanger",
+    "plant": "ZCU",
+    "eq_class": "A",
+    "discipline": "STATIC",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Thermal & Reaction Train",
+    "monitored_variables": [
+      {
+        "name": "Beda tekanan shell/tube; siklus termal; torsi baut",
+        "unit": "unit",
+        "normal": "Normal",
+        "alarm": "High",
+        "trip": "Trip",
+        "weight": 1.0
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Seal Leakage",
+      "damage_mechanism": "Hipotesis: kebocoran seal/gasket channel atau floating head karena siklus termal; loss kecil (0 jam downtime).",
+      "systemic_latent_root_cause": "Diperlukan verifikasi inspeksi NDT dan pemantauan kondisi periodik",
+      "attribution_discipline": "STA"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 8.13,
+      "historical_downtime_hrs": 0.0,
+      "risk_score": 6.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Lakukan pengecekan visual di lapangan pada HE-5734C dan isolasi bila ada kebocoran proses.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Pengencangan terkontrol (ASME PCC-1); cek kebocoran saat start-up.",
+        "type": "Preventif",
+        "pic": "ELE-02",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "HE-2276B": {
+    "tag_number": "HE-2276B",
+    "equipment_name": "Shell & tube heat exchanger",
+    "plant": "ZCU",
+    "eq_class": "C",
+    "discipline": "STATIC",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Thermal & Reaction Train",
+    "monitored_variables": [
+      {
+        "name": "Validasi tag & komponen",
+        "unit": "unit",
+        "normal": "Normal",
+        "alarm": "High",
+        "trip": "Trip",
+        "weight": 1.0
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Rotor High Vibration",
+      "damage_mechanism": "Shell & tube tidak punya rotor: kemungkinan salah input (atau fan pada air-cooled exchanger).",
+      "systemic_latent_root_cause": "Diperlukan verifikasi inspeksi NDT dan pemantauan kondisi periodik",
+      "attribution_discipline": "STA"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 126.49,
+      "historical_downtime_hrs": 8.1,
+      "risk_score": 60.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Lakukan pengecekan visual di lapangan pada HE-2276B dan isolasi bila ada kebocoran proses.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Validasi ulang data; bila air-cooled: balancing fan.",
+        "type": "Preventif",
+        "pic": "STA-01",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "HE-3559B": {
+    "tag_number": "HE-3559B",
+    "equipment_name": "Shell & tube heat exchanger",
+    "plant": "ZCU",
+    "eq_class": "A",
+    "discipline": "STATIC",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Thermal & Reaction Train",
+    "monitored_variables": [
+      {
+        "name": "Validasi tag & komponen",
+        "unit": "unit",
+        "normal": "Normal",
+        "alarm": "High",
+        "trip": "Trip",
+        "weight": 1.0
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Impeller Worn Out",
+      "damage_mechanism": "Shell & tube tidak punya impeller: kemungkinan salah input (atau pompa sirkulasi exchanger tercatat dengan tag HE).",
+      "systemic_latent_root_cause": "Diperlukan verifikasi inspeksi NDT dan pemantauan kondisi periodik",
+      "attribution_discipline": "STA"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 106.52,
+      "historical_downtime_hrs": 4.1,
+      "risk_score": 40.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Lakukan pengecekan visual di lapangan pada HE-3559B dan isolasi bila ada kebocoran proses.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Validasi ulang data; bila pompa: lihat template impeller worn out.",
+        "type": "Preventif",
+        "pic": "REL-03",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "HE-3301": {
+    "tag_number": "HE-3301",
+    "equipment_name": "Feed/Effluent Heat Exchanger",
+    "plant": "ZCU",
+    "eq_class": "B",
+    "discipline": "STATIC",
+    "provenance_level": "FACT",
+    "process_chain": "Cracking Furnace Effluent -> Quench Oil Tower -> HE-3301 Exchanger -> Primary Fractionator",
+    "monitored_variables": [
+      {
+        "name": "Tube-side Differential Pressure",
+        "unit": "bar",
+        "normal": "<0.35",
+        "alarm": ">=0.60",
+        "trip": ">=0.90",
+        "weight": 0.35
+      },
+      {
+        "name": "Feed Heavy-ends Content",
+        "unit": "%",
+        "normal": "<1.0",
+        "alarm": ">=2.0",
+        "trip": ">=3.0",
+        "weight": 0.25
+      },
+      {
+        "name": "Cold Outlet Temp",
+        "unit": "degC",
+        "normal": ">130",
+        "alarm": "<=110",
+        "trip": "<=95",
+        "weight": 0.2
+      },
+      {
+        "name": "Heat Duty",
+        "unit": "%",
+        "normal": ">98",
+        "alarm": "<=90",
+        "trip": "<=70",
+        "weight": 0.2
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Heavy-ends feed melampaui batas desain proses (2.4% vs desain <1.5%) memicu pengotoran kokas dan polimer pada sisi tabung penukar panas.",
+      "damage_mechanism": "Akumulasi kerak (coke/polymer fouling) menurunkan koefisien perpindahan panas secara drastis dan mempersempit penampang aliran pipa, melipatgandakan beda tekanan (tube dP).",
+      "systemic_latent_root_cause": "Pembersihan penukar panas sebelumnya hanya berbasis jadwal kalender tetap tanpa integrasi indikator pemantau laju penumpukan kerak (fouling factor) berbasis kondisi real-time.",
+      "attribution_discipline": "STATIC / PROCESS"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 238.68,
+      "historical_downtime_hrs": 12.0,
+      "risk_score": 400.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Kurangi feed rate unit atau alihkan beban ke exchanger standby / alternate train jika tersedia.",
+        "timeframe": "< 30 menit",
+        "source": "RCA 4 Slide 2 / ZCU ChemE Sheet"
+      },
+      {
+        "step": 2,
+        "action": "Buka bypass valve HE-3301 sebagian guna menstabilkan perbedaan tekanan (dP).",
+        "timeframe": "< 30 menit",
+        "source": "RCA 4 Slide 2"
+      },
+      {
+        "step": 3,
+        "action": "Lakukan injeksi chemical antifoulant / dispersing agent sesuai SOP operasional.",
+        "timeframe": "< 1 jam",
+        "source": "RCA 4 Slide 3"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Jadwalkan mechanical cleaning / hydrojetting berkala saat planned turnaround",
+        "type": "Korektif",
+        "pic": "STA-02",
+        "due_date": "2026-06-30",
+        "status": "Closed",
+        "source": "RCA 4 Slide 8"
+      },
+      {
+        "action": "Pasang sistem alarm pemantau laju akumulasi fouling (fouling rate indicator) di DCS",
+        "type": "Preventif",
+        "pic": "STA-02",
+        "due_date": "2026-07-31",
+        "status": "In Progress",
+        "source": "RCA 4 Slide 8"
+      },
+      {
+        "action": "Optimasi kontrol cut point dan fraksi heavy-ends dari upstream column agar konsisten di bawah 1.5%",
+        "type": "Proaktif",
+        "pic": "OPS-01",
+        "due_date": "2026-08-31",
+        "status": "Open",
+        "source": "RCA 4 Slide 9"
+      }
+    ]
+  },
+  "AZ-3493B": {
+    "tag_number": "AZ-3493B",
+    "equipment_name": "Agitator / mixer (asumsi)",
+    "plant": "ZCU",
+    "eq_class": "B",
+    "discipline": "STATIC",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Thermal & Reaction Train",
+    "monitored_variables": [
+      {
+        "name": "dP & beda suhu cooler pendukung; kualitas air pendingin",
+        "unit": "unit",
+        "normal": "Normal",
+        "alarm": "High",
+        "trip": "Trip",
+        "weight": 1.0
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Exchanger Fouling",
+      "damage_mechanism": "Data tidak logis: agitator / mixer tidak punya tube bundle. Kemungkinan fouling terjadi di cooler pendukung (intercooler / lube-oil cooler / seal cooler) atau salah input.",
+      "systemic_latent_root_cause": "Diperlukan verifikasi inspeksi NDT dan pemantauan kondisi periodik",
+      "attribution_discipline": "INS"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 82.19,
+      "historical_downtime_hrs": 2.2,
+      "risk_score": 2000.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Lakukan pengecekan visual di lapangan pada AZ-3493B dan isolasi bila ada kebocoran proses.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Validasi ulang data insiden; bila cooler pendukung: trigger cleaning berbasis dP, monitor kualitas air pendingin.",
+        "type": "Preventif",
+        "pic": "INS-02",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "AZ-2053C": {
+    "tag_number": "AZ-2053C",
+    "equipment_name": "Agitator / mixer (asumsi)",
+    "plant": "ZCU",
+    "eq_class": "A",
+    "discipline": "STATIC",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Thermal & Reaction Train",
+    "monitored_variables": [
+      {
+        "name": "Level oli gearbox; suhu; vibrasi",
+        "unit": "unit",
+        "normal": "Normal",
+        "alarm": "High",
+        "trip": "Trip",
+        "weight": 1.0
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Oil Seal Leakage",
+      "damage_mechanism": "Hipotesis: oil seal gearbox agitator bocor (lip seal aus, breather tersumbat).",
+      "systemic_latent_root_cause": "Diperlukan verifikasi inspeksi NDT dan pemantauan kondisi periodik",
+      "attribution_discipline": "INS"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 231.99,
+      "historical_downtime_hrs": 6.5,
+      "risk_score": 6.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Lakukan pengecekan visual di lapangan pada AZ-2053C dan isolasi bila ada kebocoran proses.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Ganti seal + cek breather; bearing isolator.",
+        "type": "Preventif",
+        "pic": "STA-01",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "RX-6481": {
+    "tag_number": "RX-6481",
+    "equipment_name": "Reaktor",
+    "plant": "ZCU",
+    "eq_class": "A",
+    "discipline": "STATIC",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Thermal & Reaction Train",
+    "monitored_variables": [
+      {
+        "name": "Validasi tag & komponen",
+        "unit": "unit",
+        "normal": "Normal",
+        "alarm": "High",
+        "trip": "Trip",
+        "weight": 1.0
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Impeller Worn Out",
+      "damage_mechanism": "Reaktor fixed bed tidak punya impeller: salah input atau pompa/agitator pendukung tercatat dengan tag RX.",
+      "systemic_latent_root_cause": "Diperlukan verifikasi inspeksi NDT dan pemantauan kondisi periodik",
+      "attribution_discipline": "STA"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 3.14,
+      "historical_downtime_hrs": 0.0,
+      "risk_score": 200.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Lakukan pengecekan visual di lapangan pada RX-6481 dan isolasi bila ada kebocoran proses.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Validasi ulang data.",
+        "type": "Preventif",
+        "pic": "INS-01",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "RX-4619C": {
+    "tag_number": "RX-4619C",
+    "equipment_name": "Reaktor",
+    "plant": "ZCU",
+    "eq_class": "A",
+    "discipline": "STATIC",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Thermal & Reaction Train",
+    "monitored_variables": [
+      {
+        "name": "Validasi tag & komponen; bila pendukung: vibrasi & suhu bearing",
+        "unit": "unit",
+        "normal": "Normal",
+        "alarm": "High",
+        "trip": "Trip",
+        "weight": 1.0
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Bearing Worn Out",
+      "damage_mechanism": "Reaktor fixed bed tidak punya bearing: kemungkinan peralatan pendukung (pompa/kompresor recycle) tercatat dengan tag RX.",
+      "systemic_latent_root_cause": "Diperlukan verifikasi inspeksi NDT dan pemantauan kondisi periodik",
+      "attribution_discipline": "STA"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 153.01,
+      "historical_downtime_hrs": 3.4,
+      "risk_score": 200.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Lakukan pengecekan visual di lapangan pada RX-4619C dan isolasi bila ada kebocoran proses.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Validasi ulang data; bila rotating pendukung: template bearing.",
+        "type": "Preventif",
+        "pic": "ELE-01",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "RX-3112": {
+    "tag_number": "RX-3112",
+    "equipment_name": "Reaktor",
+    "plant": "ZCU",
+    "eq_class": "A",
+    "discipline": "STATIC",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Thermal & Reaction Train",
+    "monitored_variables": [
+      {
+        "name": "Validasi tag & komponen",
+        "unit": "unit",
+        "normal": "Normal",
+        "alarm": "High",
+        "trip": "Trip",
+        "weight": 1.0
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Bearing High Vibration",
+      "damage_mechanism": "Reaktor fixed bed tidak punya bearing: kemungkinan peralatan pendukung tercatat dengan tag RX. AR No. sama dengan SW-3050.",
+      "systemic_latent_root_cause": "Diperlukan verifikasi inspeksi NDT dan pemantauan kondisi periodik",
+      "attribution_discipline": "STA"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 50.36,
+      "historical_downtime_hrs": 0.0,
+      "risk_score": 600.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Lakukan pengecekan visual di lapangan pada RX-3112 dan isolasi bila ada kebocoran proses.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Validasi ulang data & perbaiki AR No. ganda.",
+        "type": "Preventif",
+        "pic": "ROT-01",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "RX-2949A": {
+    "tag_number": "RX-2949A",
+    "equipment_name": "Reaktor",
+    "plant": "ZCU",
+    "eq_class": "B",
+    "discipline": "STATIC",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Thermal & Reaction Train",
+    "monitored_variables": [
+      {
+        "name": "Validasi tag & komponen",
+        "unit": "unit",
+        "normal": "Normal",
+        "alarm": "High",
+        "trip": "Trip",
+        "weight": 1.0
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Bearing Overheat",
+      "damage_mechanism": "Reaktor fixed bed tidak punya bearing: kemungkinan peralatan pendukung tercatat dengan tag RX.",
+      "systemic_latent_root_cause": "Diperlukan verifikasi inspeksi NDT dan pemantauan kondisi periodik",
+      "attribution_discipline": "STA"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 80.57,
+      "historical_downtime_hrs": 1.0,
+      "risk_score": 200.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Lakukan pengecekan visual di lapangan pada RX-2949A dan isolasi bila ada kebocoran proses.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Validasi ulang data.",
+        "type": "Preventif",
+        "pic": "ROT-03",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "CV-8863C": {
+    "tag_number": "CV-8863C",
+    "equipment_name": "Control valve",
+    "plant": "ZCU",
+    "eq_class": "B",
+    "discipline": "STATIC",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Thermal & Reaction Train",
+    "monitored_variables": [
+      {
+        "name": "Tekanan & level oli aktuator; siklus stroke",
+        "unit": "unit",
+        "normal": "Normal",
+        "alarm": "High",
+        "trip": "Trip",
+        "weight": 1.0
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Oil Seal Leakage",
+      "damage_mechanism": "Hipotesis: seal aktuator hidrolik/oli bocor (aus atau tekanan berlebih).",
+      "systemic_latent_root_cause": "Diperlukan verifikasi inspeksi NDT dan pemantauan kondisi periodik",
+      "attribution_discipline": "INS"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 78.14,
+      "historical_downtime_hrs": 5.9,
+      "risk_score": 2000.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Lakukan pengecekan visual di lapangan pada CV-8863C dan isolasi bila ada kebocoran proses.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Ganti seal aktuator; monitor tekanan hidrolik; partial stroke test.",
+        "type": "Preventif",
+        "pic": "INS-01",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "CV-6587": {
+    "tag_number": "CV-6587",
+    "equipment_name": "Control valve",
+    "plant": "ZCU",
+    "eq_class": "B",
+    "discipline": "STATIC",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Thermal & Reaction Train",
+    "monitored_variables": [
+      {
+        "name": "Suhu & arus aktuator MOV; validasi tipe valve",
+        "unit": "unit",
+        "normal": "Normal",
+        "alarm": "High",
+        "trip": "Trip",
+        "weight": 1.0
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Bearing Overheat",
+      "damage_mechanism": "Control valve pneumatik tidak punya bearing; mungkin valve motor-operated (gearbox aktuator) atau salah input.",
+      "systemic_latent_root_cause": "Diperlukan verifikasi inspeksi NDT dan pemantauan kondisi periodik",
+      "attribution_discipline": "INS"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 66.02,
+      "historical_downtime_hrs": 2.0,
+      "risk_score": 6.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Lakukan pengecekan visual di lapangan pada CV-6587 dan isolasi bila ada kebocoran proses.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Validasi data; bila MOV: pelumasan gearbox aktuator.",
+        "type": "Preventif",
+        "pic": "INS-02",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "TK-1215": {
+    "tag_number": "TK-1215",
+    "equipment_name": "Tangki (dengan mixer)",
+    "plant": "ZCU",
+    "eq_class": "A",
+    "discipline": "STATIC",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Thermal & Reaction Train",
+    "monitored_variables": [
+      {
+        "name": "Level oli gearbox mixer; vibrasi",
+        "unit": "unit",
+        "normal": "Normal",
+        "alarm": "High",
+        "trip": "Trip",
+        "weight": 1.0
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Oil Seal Leakage",
+      "damage_mechanism": "Hipotesis: oil seal gearbox mixer tangki bocor (lip seal aus/sleeve tergores).",
+      "systemic_latent_root_cause": "Diperlukan verifikasi inspeksi NDT dan pemantauan kondisi periodik",
+      "attribution_discipline": "STA"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 46.97,
+      "historical_downtime_hrs": 0.0,
+      "risk_score": 6.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Lakukan pengecekan visual di lapangan pada TK-1215 dan isolasi bila ada kebocoran proses.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Ganti seal + cek sleeve; pasang bearing isolator.",
+        "type": "Preventif",
+        "pic": "REL-02",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "TK-2175C": {
+    "tag_number": "TK-2175C",
+    "equipment_name": "Tangki (dengan mixer)",
+    "plant": "ZCU",
+    "eq_class": "A",
+    "discipline": "STATIC",
+    "provenance_level": "ENGINEERING_HYPOTHESIS",
+    "process_chain": "ZCU Thermal & Reaction Train",
+    "monitored_variables": [
+      {
+        "name": "Offset alignment; umur elemen kopling",
+        "unit": "unit",
+        "normal": "Normal",
+        "alarm": "High",
+        "trip": "Trip",
+        "weight": 1.0
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Coupling Worn Out",
+      "damage_mechanism": "Hipotesis: kopling mixer tangki aus karena misalignment / elemen tua.",
+      "systemic_latent_root_cause": "Diperlukan verifikasi inspeksi NDT dan pemantauan kondisi periodik",
+      "attribution_discipline": "STA"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 61.39,
+      "historical_downtime_hrs": 1.1,
+      "risk_score": 6.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Lakukan pengecekan visual di lapangan pada TK-2175C dan isolasi bila ada kebocoran proses.",
+        "timeframe": "< 30 menit",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Laser alignment; register kopling.",
+        "type": "Preventif",
+        "pic": "REL-03",
+        "due_date": "2026-12-31",
+        "status": "Open",
+        "source": "ZCU ChemE FMEA Hypothesis Sheet"
+      }
+    ]
+  },
+  "PU-2101B": {
+    "tag_number": "PU-2101B",
+    "equipment_name": "Feed Charge Pump",
+    "plant": "ARP",
+    "eq_class": "B",
+    "discipline": "ROTARY",
+    "provenance_level": "FACT",
+    "process_chain": "Feed Tank -> PU-2101A/B Charge Pumps -> Reaction Train ARP",
+    "monitored_variables": [
+      {
+        "name": "Seal Flush Flow",
+        "unit": "L/min",
+        "normal": ">15",
+        "alarm": "<10",
+        "trip": "<5",
+        "weight": 0.4
+      },
+      {
+        "name": "Bearing Vibration",
+        "unit": "mm/s",
+        "normal": "<4.5",
+        "alarm": "7.0",
+        "trip": "11.0",
+        "weight": 0.3
+      },
+      {
+        "name": "Discharge Pressure",
+        "unit": "barg",
+        "normal": "12-14",
+        "alarm": "<10",
+        "trip": "<8",
+        "weight": 0.3
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Suplai umpan dari tangki penyimpanan terputus mendadak saat proses pengalihan (tank switching).",
+      "damage_mechanism": "Operasi kering (dry run) memicu lonjakan suhu gesek pada sil mekanikal (mechanical seal faces), mengakibatkan degradasi termal dan kebocoran cairan hidrokarbon.",
+      "systemic_latent_root_cause": "Ketiadaan logika interlock minimum suction flow otomatis di DCS yang dapat mematikan pompa sebelum seal mengalami kerusakan panas.",
+      "attribution_discipline": "ROTARY / MECHANICAL"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 226.4,
+      "historical_downtime_hrs": 18.5,
+      "risk_score": 200.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Hentikan operasi PU-2101B dan alihkan aliran umpan ke pompa cadangan PU-2101A.",
+        "timeframe": "< 15 menit",
+        "source": "RCA 1 Slide 2"
+      },
+      {
+        "step": 2,
+        "action": "Isolasi suction dan discharge valve PU-2101B serta pasang tanda peringatan LOTO.",
+        "timeframe": "< 30 menit",
+        "source": "RCA 1 Slide 2"
+      },
+      {
+        "step": 3,
+        "action": "Bongkar rumah sil dan ganti mechanical seal dengan unit cadangan terinspeksi.",
+        "timeframe": "Pekerjaan Darurat Lapangan",
+        "source": "RCA 1 Slide 3"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Pasang sensor flow transmitter pada jalur suction dan integrasikan interlock trip ke DCS",
+        "type": "Korektif",
+        "pic": "REL-05",
+        "due_date": "2026-06-30",
+        "status": "In Progress",
+        "source": "RCA 1 Slide 8"
+      },
+      {
+        "action": "Perbarui SOP prosedur switching tangki umpan dengan konfirmasi jalur aliran dua operator",
+        "type": "Preventif",
+        "pic": "OPS-01",
+        "due_date": "2026-05-15",
+        "status": "Closed",
+        "source": "RCA 1 Slide 8"
+      }
+    ]
+  },
+  "PM-4405B": {
+    "tag_number": "PM-4405B",
+    "equipment_name": "Cooling Water Pump",
+    "plant": "NUP",
+    "eq_class": "B",
+    "discipline": "ROTARY",
+    "provenance_level": "FACT",
+    "process_chain": "Cooling Tower Basin -> PM-4405A/B Pumps -> Plant Cooling Water Header",
+    "monitored_variables": [
+      {
+        "name": "Motor Bearing Vibration",
+        "unit": "mm/s",
+        "normal": "<4.5",
+        "alarm": "7.0",
+        "trip": "11.0",
+        "weight": 0.4
+      },
+      {
+        "name": "Bearing Temperature",
+        "unit": "degC",
+        "normal": "<75",
+        "alarm": "90",
+        "trip": "105",
+        "weight": 0.4
+      },
+      {
+        "name": "Motor Current",
+        "unit": "A",
+        "normal": "120-140",
+        "alarm": "165",
+        "trip": "185",
+        "weight": 0.2
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Interval jadwal pelumasan berkala 12 bulan tidak memadai untuk jam operasi kontinu pada beban penuh di lingkungan berdebu.",
+      "damage_mechanism": "Degradasi viskositas gemuk pelumas memicu gesekan kontak logam bantalan motor, menyebabkan spalling pada raceway dan kenaikan getaran tinggi.",
+      "systemic_latent_root_cause": "Penerapan strategi pemeliharaan berbasis waktu kaku (fixed time-based maintenance) tanpa validasi inspeksi akustik ultrasonik berkala.",
+      "attribution_discipline": "ROTARY / ELECTRICAL"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 112.0,
+      "historical_downtime_hrs": 8.0,
+      "risk_score": 150.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Nyalakan pompa cooling water cadangan PM-4405A dan verifikasi kestabilan tekanan header.",
+        "timeframe": "< 15 menit",
+        "source": "RCA 3 Slide 2"
+      },
+      {
+        "step": 2,
+        "action": "Lakukan shutdown terkontrol pada motor PM-4405B dan putuskan circuit breaker.",
+        "timeframe": "< 30 menit",
+        "source": "RCA 3 Slide 2"
+      },
+      {
+        "step": 3,
+        "action": "Ganti bantalan motor sisi drive-end dan bersihkan gemuk terdegradasi.",
+        "timeframe": "Pekerjaan Darurat Lapangan",
+        "source": "RCA 3 Slide 3"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Pindahkan program pelumasan motor kritis dari basis waktu tahunan menjadi pemeliharaan berbasis kondisi (CBM akustik ultrasonik)",
+        "type": "Preventif",
+        "pic": "REL-03",
+        "due_date": "2026-07-31",
+        "status": "Closed",
+        "source": "RCA 3 Slide 7"
+      },
+      {
+        "action": "Pasang sensor suhu bantalan PT100 daring ke transmisi modul DCS",
+        "type": "Korektif",
+        "pic": "ELE-02",
+        "due_date": "2026-08-31",
+        "status": "In Progress",
+        "source": "RCA 3 Slide 7"
+      }
+    ]
+  },
+  "BL-5702": {
+    "tag_number": "BL-5702",
+    "equipment_name": "Product Blower",
+    "plant": "OPP",
+    "eq_class": "B",
+    "discipline": "ROTARY",
+    "provenance_level": "FACT",
+    "process_chain": "Polypropylene Reactor -> Product Purge Bin -> BL-5702 Blower -> Pelletizing",
+    "monitored_variables": [
+      {
+        "name": "Overall Vibration",
+        "unit": "mm/s",
+        "normal": "<4.5",
+        "alarm": "7.1",
+        "trip": "11.2",
+        "weight": 0.5
+      },
+      {
+        "name": "Motor Current",
+        "unit": "A",
+        "normal": "85-110",
+        "alarm": "130",
+        "trip": "150",
+        "weight": 0.25
+      },
+      {
+        "name": "Bearing Temp",
+        "unit": "degC",
+        "normal": "<70",
+        "alarm": "85",
+        "trip": "100",
+        "weight": 0.25
+      }
+    ],
+    "root_cause_summary": {
+      "physical_trigger": "Ketidaksejajaran sumbu poros antara motor penggerak dan blower pasca perbaikan darurat sebelumnya.",
+      "damage_mechanism": "Coupling misalignment menghasilkan gaya radial siklik 2X RPM, merusak elemen fleksibel kopling dan memicu getaran radial tinggi.",
+      "systemic_latent_root_cause": "Proses alignment mekanikal sebelumnya hanya menggunakan dial gauge mekanis tanpa kompensasi pertumbuhan termal (thermal growth) dan tanpa verifikasi laser.",
+      "attribution_discipline": "ROTARY / MECHANICAL"
+    },
+    "financial_context": {
+      "historical_loss_k_usd": 478.8,
+      "historical_downtime_hrs": 14.0,
+      "risk_score": 300.0
+    },
+    "immediate_actions": [
+      {
+        "step": 1,
+        "action": "Turunkan beban putaran blower BL-5702 guna meredam getaran destruktif pada impeler.",
+        "timeframe": "< 15 menit",
+        "source": "RCA 5 Slide 2"
+      },
+      {
+        "step": 2,
+        "action": "Lakukan shutdown terencana blower dan isolasi damper suction/discharge.",
+        "timeframe": "< 30 menit",
+        "source": "RCA 5 Slide 2"
+      },
+      {
+        "step": 3,
+        "action": "Lakukan re-alignment poros menggunakan instrumen optik laser presisi tinggi dengan koreksi termal.",
+        "timeframe": "Pekerjaan Darurat Lapangan",
+        "source": "RCA 5 Slide 4"
+      }
+    ],
+    "permanent_capa": [
+      {
+        "action": "Wajibkan lembar verifikasi toleransi laser alignment (<0.05 mm) sebelum izin serah terima operasi diterbitkan",
+        "type": "Preventif",
+        "pic": "MEC-04",
+        "due_date": "2026-06-15",
+        "status": "Closed",
+        "source": "RCA 5 Slide 8"
+      },
+      {
+        "action": "Pasang sensor getaran nirkabel kontinu dengan analisis spektrum FFT di dasbor prediktif",
+        "type": "Proaktif",
+        "pic": "REL-01",
+        "due_date": "2026-09-30",
+        "status": "Open",
+        "source": "RCA 5 Slide 9"
+      }
+    ]
+  }
+}
