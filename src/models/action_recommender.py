@@ -335,22 +335,25 @@ class ActionRecommender:
                 "contents": [{"parts": [{"text": prompt}]}],
                 "generationConfig": {"temperature": 0.1, "maxOutputTokens": 140},
             }
-            candidate_models = ["gemini-flash-latest", "gemini-flash-lite-latest"]
+            candidate_models = ["gemini-flash-lite-latest", "gemini-flash-latest"]
             for model_name in candidate_models:
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
-                req = urllib.request.Request(
-                    url,
-                    data=json.dumps(payload).encode("utf-8"),
-                    headers={"Content-Type": "application/json"},
-                    method="POST",
-                )
-                with urllib.request.urlopen(req, timeout=3.5) as resp:
-                    data = json.loads(resp.read().decode("utf-8"))
-                    candidates = data.get("candidates", [])
-                    if candidates:
-                        llm_text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-                        if llm_text.strip():
-                            return llm_text.strip(), "EXECUTIVE_BRIEFING (Online Copilot Mode)"
+                try:
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+                    req = urllib.request.Request(
+                        url,
+                        data=json.dumps(payload).encode("utf-8"),
+                        headers={"Content-Type": "application/json"},
+                        method="POST",
+                    )
+                    with urllib.request.urlopen(req, timeout=3.5) as resp:
+                        data = json.loads(resp.read().decode("utf-8"))
+                        candidates = data.get("candidates", [])
+                        if candidates:
+                            llm_text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                            if llm_text.strip():
+                                return llm_text.strip(), "EXECUTIVE_BRIEFING (Online Copilot Mode)"
+                except Exception:
+                    continue
         except Exception:
             pass
 
@@ -530,36 +533,39 @@ class ActionRecommender:
                     "Jawab pertanyaan operator secara langsung, to the point, teknis, profesional, tanpa buzzword, berbasis data di atas (maksimal 100 kata)."
                 )
 
-                candidate_models = ["gemini-flash-latest", "gemini-flash-lite-latest"]
+                candidate_models = ["gemini-flash-lite-latest", "gemini-flash-latest"]
                 for model_name in candidate_models:
-                    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
-                    payload = {
-                        "contents": [{"parts": [{"text": system_prompt}]}],
-                        "generationConfig": {"temperature": 0.1, "maxOutputTokens": 350},
-                    }
-                    req = urllib.request.Request(
-                        url,
-                        data=json.dumps(payload).encode("utf-8"),
-                        headers={"Content-Type": "application/json"},
-                        method="POST",
-                    )
-                    with urllib.request.urlopen(req, timeout=3.5) as resp:
-                        data = json.loads(resp.read().decode("utf-8"))
-                        candidates = data.get("candidates", [])
-                        if candidates:
-                            llm_text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-                            if llm_text and llm_text.strip():
-                                clean_text = llm_text.strip()
-                                online_res = {
-                                    "query": query_text,
-                                    "scenario_title": f"Respons Analisis: {query_text[:35]}...",
-                                    "answer": clean_text,
-                                    "source": "LIVE PROCESS COPILOT (Online Cloud Mode)",
-                                    "engine_status": "LIVE_ONLINE",
-                                }
-                                if hasattr(self, "_query_cache"):
-                                    self._query_cache[cache_key] = online_res
-                                return online_res
+                    try:
+                        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+                        payload = {
+                            "contents": [{"parts": [{"text": system_prompt}]}],
+                            "generationConfig": {"temperature": 0.1, "maxOutputTokens": 350},
+                        }
+                        req = urllib.request.Request(
+                            url,
+                            data=json.dumps(payload).encode("utf-8"),
+                            headers={"Content-Type": "application/json"},
+                            method="POST",
+                        )
+                        with urllib.request.urlopen(req, timeout=3.5) as resp:
+                            data = json.loads(resp.read().decode("utf-8"))
+                            candidates = data.get("candidates", [])
+                            if candidates:
+                                llm_text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                                if llm_text and llm_text.strip():
+                                    clean_text = llm_text.strip()
+                                    online_res = {
+                                        "query": query_text,
+                                        "scenario_title": f"Respons Analisis: {query_text[:35]}...",
+                                        "answer": clean_text,
+                                        "source": "LIVE PROCESS COPILOT (Online Cloud Mode)",
+                                        "engine_status": "LIVE_ONLINE",
+                                    }
+                                    if hasattr(self, "_query_cache"):
+                                        self._query_cache[cache_key] = online_res
+                                    return online_res
+                    except Exception:
+                        continue
             except Exception:
                 pass
 
