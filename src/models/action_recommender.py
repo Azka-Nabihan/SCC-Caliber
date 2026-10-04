@@ -333,7 +333,7 @@ class ActionRecommender:
             )
             payload = {
                 "contents": [{"parts": [{"text": prompt}]}],
-                "generationConfig": {"temperature": 0.1, "maxOutputTokens": 140},
+                "generationConfig": {"temperature": 0.1, "maxOutputTokens": 600},
             }
             candidate_models = ["gemini-flash-lite-latest", "gemini-flash-latest"]
             for model_name in candidate_models:
@@ -345,13 +345,18 @@ class ActionRecommender:
                         headers={"Content-Type": "application/json"},
                         method="POST",
                     )
-                    with urllib.request.urlopen(req, timeout=3.5) as resp:
+                    with urllib.request.urlopen(req, timeout=5.0) as resp:
                         data = json.loads(resp.read().decode("utf-8"))
                         candidates = data.get("candidates", [])
                         if candidates:
-                            llm_text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-                            if llm_text.strip():
-                                return llm_text.strip(), "EXECUTIVE_BRIEFING (Online Copilot Mode)"
+                            cand = candidates[0]
+                            # If truncated by token limit, reject incomplete text
+                            if cand.get("finishReason") == "MAX_TOKENS":
+                                continue
+                            parts = cand.get("content", {}).get("parts", [])
+                            llm_text = "".join(p.get("text", "") for p in parts if "text" in p).strip()
+                            if llm_text and len(llm_text) >= 20:
+                                return llm_text, "EXECUTIVE_BRIEFING (Online Copilot Mode)"
                 except Exception:
                     continue
         except Exception:
@@ -539,7 +544,7 @@ class ActionRecommender:
                         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
                         payload = {
                             "contents": [{"parts": [{"text": system_prompt}]}],
-                            "generationConfig": {"temperature": 0.1, "maxOutputTokens": 350},
+                            "generationConfig": {"temperature": 0.1, "maxOutputTokens": 1000},
                         }
                         req = urllib.request.Request(
                             url,
@@ -547,12 +552,17 @@ class ActionRecommender:
                             headers={"Content-Type": "application/json"},
                             method="POST",
                         )
-                        with urllib.request.urlopen(req, timeout=3.5) as resp:
+                        with urllib.request.urlopen(req, timeout=6.0) as resp:
                             data = json.loads(resp.read().decode("utf-8"))
                             candidates = data.get("candidates", [])
                             if candidates:
-                                llm_text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-                                if llm_text and llm_text.strip():
+                                cand = candidates[0]
+                                # If truncated by token limit, reject incomplete output and try next
+                                if cand.get("finishReason") == "MAX_TOKENS":
+                                    continue
+                                parts = cand.get("content", {}).get("parts", [])
+                                llm_text = "".join(p.get("text", "") for p in parts if "text" in p).strip()
+                                if llm_text and len(llm_text) >= 20:
                                     clean_text = llm_text.strip()
                                     online_res = {
                                         "query": query_text,
