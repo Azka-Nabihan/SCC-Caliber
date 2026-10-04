@@ -200,3 +200,43 @@ def test_zcu_plant_equipment_coverage_and_multi_domain(action_recommender):
     assert hist_he["actual_loss_k_usd"] == 183.6
     assert hist_he["potential_loss_k_usd"] == 55.08
     assert hist_he["actual_downtime_hrs"] == 12.0
+
+
+def test_evaluate_operational_state_triplet_logic(action_recommender):
+    """
+    Test 8: Verifies 5 operational states governed by triplet logic f(run_status, is_anomaly, HI).
+    Thresholds: NORMAL >= 85.0%, WARNING < 65.0%.
+    """
+    from src.models.action_recommender import evaluate_operational_state
+
+    # 1. State 1: OFFLINE (Machine Stopped, run_status = 0)
+    status_text, color, state = evaluate_operational_state(run_status=0, is_anomaly=False, health_index=0.0)
+    assert state == 1
+    assert color == "GREY"
+    assert "OFFLINE" in status_text
+
+    # 2. State 2: NORMAL STEADY-STATE (run_status = 1, is_anomaly = False, HI = 100.0%)
+    status_text, color, state = evaluate_operational_state(run_status=1, is_anomaly=False, health_index=100.0)
+    assert state == 2
+    assert color == "GREEN"
+    assert "NORMAL STEADY-STATE" in status_text
+
+    # 3. State 3: EARLY WARNING (run_status = 1, is_anomaly = True, HI = 98.6% >= 85.0%)
+    status_text, color, state = evaluate_operational_state(run_status=1, is_anomaly=True, health_index=98.6)
+    assert state == 3
+    assert color == "AMBER"
+    assert "EARLY WARNING" in status_text
+    assert "NORMAL" in status_text
+
+    # 4. State 4: WARNING (run_status = 1, is_anomaly = True, 65.0% <= HI < 85.0%)
+    status_text, color, state = evaluate_operational_state(run_status=1, is_anomaly=True, health_index=75.0)
+    assert state == 4
+    assert color == "YELLOW"
+    assert "WARNING" in status_text
+
+    # 5. State 5: CRITICAL (run_status = 1, is_anomaly = True, HI < 65.0%)
+    status_text, color, state = evaluate_operational_state(run_status=1, is_anomaly=True, health_index=45.0)
+    assert state == 5
+    assert color == "RED"
+    assert "CRITICAL" in status_text
+

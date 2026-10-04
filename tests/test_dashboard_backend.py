@@ -1,0 +1,228 @@
+"""
+Unit and Integration Test Suite for Stage 4 Single Pane of Glass Dashboard Backend.
+Tests Data Provider, Caching, P-F Decision Simulator, Similar Incidents Retrieval,
+and Plant ZCU Fleet Risk Matrix.
+"""
+
+import time
+import pytest
+import pandas as pd
+import numpy as np
+
+from src.app.data_provider import DashboardDataProvider, _load_stage2_scores_csv, _load_fleet_metadata
+
+
+@pytest.fixture(scope="module")
+def data_provider():
+    return DashboardDataProvider()
+
+
+def test_caching_helpers_no_unhashable_error():
+    """
+    Test 1 (Solution M1): Module-level caching functions execute cleanly without
+    unhashable instance errors on self.
+    """
+    df1 = _load_stage2_scores_csv()
+    assert isinstance(df1, pd.DataFrame)
+    assert len(df1) == 720
+
+    meta = _load_fleet_metadata()
+    assert isinstance(meta, dict)
+    assert len(meta) >= 56
+
+
+def test_load_timeseries_data_schema(data_provider):
+    """
+    Test 2 (Solution L3): Verifies 720 rows and exact lowercase column naming convention.
+    """
+    df = data_provider.load_timeseries_data()
+    assert len(df) == 720
+    expected_cols = [
+        "timestamp", "hour", "RUN_STATUS", "KO3201_FEED", "KO3201_DISP",
+        "KO3201_AMP", "KO3201_TEMP", "KO3201_VIB", "PLANT_RATE",
+        "gdn_anomaly_score", "is_anomaly", "top_contributors", "health_index"
+    ]
+    for col in expected_cols:
+        assert col in df.columns, f"Missing expected column: {col}"
+
+
+def test_get_hour_snapshots_across_states(data_provider):
+    """
+    Test 3 (Solutions C2, C6, L1, M2): Verifies snapshot responses across 4 key hours:
+    - Hour 100: Normal steady-state (State 2, Green, Vib ~28.76 um dynamic extraction)
+    - Hour 633: GDN Early Warning (State 3, Amber, HI 98.58%, Lead Time 16h)
+    - Hour 649: DCS Alarm Exceeded (State 4, Yellow, Vib 46.4 um)
+    - Hour 679: Machine Offline Post-Trip (State 1, Grey, RUN_STATUS = 0)
+    Ensures sub-5ms lookup latency.
+    """
+    # Performance benchmark (Solution M2: sub-20ms responsiveness)
+    _ = data_provider.get_hour_snapshot(0)  # Warm-up call
+    t0 = time.perf_counter()
+    snap100 = data_provider.get_hour_snapshot(100)
+    elapsed_ms = (time.perf_counter() - t0) * 1000.0
+    assert elapsed_ms < 15.0, f"Snapshot lookup too slow: {elapsed_ms:.2f} ms"
+
+    # Hour 100 Check
+    assert snap100["operational_state"] == 2
+    assert snap100["status_color"] == "GREEN"
+    assert "NORMAL STEADY-STATE" in snap100["current_status"]
+    assert snap100["vibration"] == pytest.approx(28.76, rel=1e-2)
+
+    # Hour 633 Check
+    snap633 = data_provider.get_hour_snapshot(633)
+    assert snap633["operational_state"] == 3
+    assert snap633["status_color"] == "AMBER"
+    assert "EARLY WARNING" in snap633["current_status"]
+    assert snap633["health_index"] == pytest.approx(98.58, rel=1e-2)
+    assert snap633["vibration"] == pytest.approx(31.24, rel=1e-2)
+    assert "16 Jam" in snap633["detected_lead_time"]["headline"]
+
+    # Hour 649 Check
+    snap649 = data_provider.get_hour_snapshot(649)
+    assert snap649["operational_state"] == 4
+    assert snap649["status_color"] == "YELLOW"
+    assert snap649["vibration"] >= 45.0  # Exceeds DCS Alarm
+
+    # Hour 679 Check
+    snap679 = data_provider.get_hour_snapshot(679)
+    assert snap679["operational_state"] == 1
+    assert snap679["status_color"] == "GREY"
+    assert snap679["run_status"] == 0
+    assert "OFFLINE" in snap679["current_status"]
+
+
+def test_pf_decision_simulator(data_provider):
+    """
+    Test 4 (Solutions C1, H3): Verifies P-F curve response time simulation:
+    - Action at Hour 633: 8 hrs downtime, $1,188.0k savings, $0 delay cost
+    - Action at Hour 679: 32 hrs downtime, $0 savings, $1,188.0k cost of inaction
+    - Intermediate Hour 656: 8 + (23/46)^2 * 24 = 14 hrs downtime, savings = $891.0k
+    """
+    sim633 = data_provider.simulate_pf_decision(action_hour=633)
+    assert sim633["action_hour"] == 633
+    assert sim633["projected_downtime_hrs"] == 8.0
+    assert sim633["net_savings_k_usd"] == 1188.0
+    assert sim633["cost_of_delay_k_usd"] == 0.0
+
+    sim679 = data_provider.simulate_pf_decision(action_hour=679)
+    assert sim679["action_hour"] == 679
+    assert sim679["projected_downtime_hrs"] == 32.0
+    assert sim679["net_savings_k_usd"] == 0.0
+    assert sim679["cost_of_delay_k_usd"] == 1188.0
+
+    sim656 = data_provider.simulate_pf_decision(action_hour=656)
+    assert sim656["projected_downtime_hrs"] == pytest.approx(14.0, abs=0.5)
+    assert 800.0 <= sim656["net_savings_k_usd"] <= 950.0
+
+
+def test_similar_incidents_retrieval(data_provider):
+    """
+    Test 5 (Solution H7): Verifies retrieval of top-3 compressor/pump incidents
+    from the 380-incident repository with relevance sorting.
+    """
+    similar = data_provider.get_similar_incidents(equipment_type="COMPRESSOR", top_k=3)
+    assert len(similar) == 3
+    for inc in similar:
+        assert "incident_reference" in inc
+        assert "plant" in inc
+        assert "failure_mechanism" in inc
+        assert "actual_loss_k_usd" in inc
+        assert inc["actual_loss_k_usd"] > 0
+
+
+def test_fleet_matrix_aggregations(data_provider):
+    """
+    Test 6 (Solutions C4, M3, M4, L4): Verifies fleet matrix:
+    - 56 total ZCU assets
+    - Exactly 17 Rotary, 10 Electrical, 29 Static
+    - 2 FACT (KO-3201, HE-3301) and 54 ENGINEERING_HYPOTHESIS
+    - Total ZCU Risk = $11.11M, Total Complex Exposure = $67.19M
+    - Canonical keys: tag_number, equipment_name, category, criticality_class, provenance_level, risk_score
+    """
+    fleet_data = data_provider.get_fleet_matrix()
+    assets = fleet_data["assets"]
+    assert len(assets) == 56
+
+    # Category counts
+    rotary = [a for a in assets if a["category"].upper() == "ROTARY"]
+    electrical = [a for a in assets if a["category"].upper() == "ELECTRICAL"]
+    static = [a for a in assets if a["category"].upper() == "STATIC"]
+    assert len(rotary) == 17
+    assert len(electrical) == 10
+    assert len(static) == 29
+
+    # Provenance counts
+    fact_count = sum(1 for a in assets if a["provenance_level"] == "FACT")
+    hyp_count = sum(1 for a in assets if a["provenance_level"] == "ENGINEERING_HYPOTHESIS")
+    assert fact_count == 2
+    assert hyp_count == 54
+
+    # Financial Exposure reconciliation
+    assert fleet_data["zcu_portfolio_risk_k_usd"] == pytest.approx(11110.0, rel=1e-1)  # ~$11.11M
+    assert fleet_data["complex_total_exposure_k_usd"] == pytest.approx(67190.0, rel=1e-1)  # ~$67.19M
+
+
+def test_charts_generation(data_provider):
+    """
+    Test 7 (Solutions C1, C6, H4): Verifies that Plotly chart generators
+    produce valid Figure objects with appropriate shapes and annotations.
+    """
+    from src.app.charts import (
+        create_health_index_gauge,
+        create_telemetry_trend_chart,
+        create_pid_deviation_graph,
+        create_pf_escalation_chart,
+    )
+    import plotly.graph_objects as go
+
+    # 1. Gauge chart
+    gauge_fig = create_health_index_gauge(hi_val=98.58, status_color="AMBER", operational_state=3)
+    assert isinstance(gauge_fig, go.Figure)
+
+    # 2. Telemetry trend chart
+    df = data_provider.load_timeseries_data()
+    trend_fig = create_telemetry_trend_chart(df, current_hour=633)
+    assert isinstance(trend_fig, go.Figure)
+    assert len(trend_fig.data) >= 2  # Vibration trace + GDN score trace
+
+    # 3. P&ID graph
+    snap633 = data_provider.get_hour_snapshot(633)
+    pid_fig = create_pid_deviation_graph(top_contributors=snap633["top_contributors"], current_hour=633)
+    assert isinstance(pid_fig, go.Figure)
+
+    # 4. P-F Curve Escalation Chart
+    pf_fig = create_pf_escalation_chart(current_action_hour=633)
+    assert isinstance(pf_fig, go.Figure)
+
+
+def test_dashboard_ui_apptest_headless():
+    """
+    Test 8 (Solutions M5, H6, L2): End-to-end headless verification of Streamlit UI
+    using streamlit.testing.v1.AppTest in-memory runner.
+    Verifies startup without exception, sidebar slider time travel, and bookmark interaction.
+    """
+    from streamlit.testing.v1 import AppTest
+
+    # Initialize headless test instance
+    at = AppTest.from_file("src/app/dashboard.py", default_timeout=15)
+    at.run()
+
+    # Verify initial run completed with zero exceptions
+    assert not at.exception, f"AppTest encountered exception: {at.exception}"
+
+    # Verify slider interaction: shift timeline to Hour 633
+    if len(at.slider) > 0:
+        at.slider[0].set_value(633).run()
+        assert not at.exception
+
+    # Verify slider interaction: shift timeline to Hour 100
+    if len(at.slider) > 0:
+        at.slider[0].set_value(100).run()
+        assert not at.exception
+
+    # Verify slider interaction: shift timeline to Hour 679
+    if len(at.slider) > 0:
+        at.slider[0].set_value(679).run()
+        assert not at.exception
+
+

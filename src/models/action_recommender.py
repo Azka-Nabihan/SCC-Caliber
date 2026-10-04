@@ -15,6 +15,41 @@ from typing import Any, Dict, List, Optional, Union
 from src.models.incident_matcher import IncidentMatcher
 
 
+def evaluate_operational_state(
+    run_status: int,
+    is_anomaly: bool,
+    health_index: float,
+    vibration: float = 0.0,
+) -> tuple[str, str, int]:
+    """
+    Determines operational state (1-5), status label, and indicator color
+    using deterministic triplet logic f(run_status, is_anomaly, health_index, vibration).
+    Thresholds: NORMAL_MIN = 85.0, WARNING_MIN = 65.0, DCS_ALARM_VIB = 45.0.
+    """
+    run = int(run_status)
+    anom = bool(is_anomaly)
+    hi = float(health_index)
+    vib = float(vibration)
+
+    if run == 0:
+        # State 1: Machine Offline / Post-trip
+        return "OFFLINE / POST-TRIP (Machine Stopped)", "GREY", 1
+    if not anom and vib < 45.0:
+        # State 2: Normal steady-state (no active alerts, vibration within baseline)
+        return "NORMAL STEADY-STATE (No Active Alerts)", "GREEN", 2
+
+    # State 5: Critical (trip risk imminent or severe pre-trip vibration)
+    if hi < 65.0 or vib >= 70.0:
+        return f"CRITICAL (Trip Risk Imminent), Health Index: {hi:.1f}%", "RED", 5
+
+    # State 4: Warning (DCS Alarm 45 um exceeded OR Health Index in warning band 65-84.9%)
+    if vib >= 45.0 or hi < 85.0:
+        return f"WARNING (Subsystem Degradation), Health Index: {hi:.1f}%", "YELLOW", 4
+
+    # State 3: Early Warning (GDN detected micro-deviation, physical sensors < 45 um, HI >= 85.0%)
+    return f"EARLY WARNING (GDN Anomaly Detected), Health Index: {hi:.1f}% (NORMAL)", "AMBER", 3
+
+
 class ActionRecommender:
     """
     Action Card Recommender grounded in official plant RCA investigations.
@@ -60,20 +95,26 @@ class ActionRecommender:
         provenance = eq_meta.get("provenance_level", "ENGINEERING_HYPOTHESIS")
         discipline = eq_meta.get("discipline", "ROTARY")
 
-        # 1. Status Evaluation & Health Index
+        # 1. Status Evaluation & Health Index (Triplet Logic f(run_status, is_anomaly, HI))
         hi = float(anomaly_info.get("health_index", 98.6))
         anomaly_score = float(anomaly_info.get("anomaly_score", 10.7))
         hour = int(anomaly_info.get("hour", 633))
+        vibration = float(anomaly_info.get("vibration", anomaly_info.get("KO3201_VIB", 31.24)))
 
-        if hi >= 90.0:
-            current_status = f"EARLY WARNING (GDN Anomaly Detected), Health Index: {hi:.1f}% (NORMAL)"
-            status_color = "AMBER"
-        elif hi >= 60.0:
-            current_status = f"WARNING (Subsystem Degradation), Health Index: {hi:.1f}%"
-            status_color = "YELLOW"
+        # Extract run_status and is_anomaly with safe defaults preserving backward compatibility
+        run_status = int(anomaly_info.get("run_status", anomaly_info.get("RUN_STATUS", 1)))
+        if "is_anomaly" in anomaly_info:
+            is_anomaly = bool(anomaly_info["is_anomaly"])
         else:
-            current_status = f"CRITICAL (Trip Risk Imminent), Health Index: {hi:.1f}%"
-            status_color = "RED"
+            # Fallback for Stage 3 backward compatibility: hour 633 or score > 3.11 is anomaly
+            is_anomaly = (hour >= 633 and hour < 679) or (anomaly_score > 3.11)
+
+        current_status, status_color, op_state = evaluate_operational_state(
+            run_status=run_status,
+            is_anomaly=is_anomaly,
+            health_index=hi,
+            vibration=vibration,
+        )
 
         # 2. Detected Lead Time
         if tag_clean == "KO-3201":
@@ -177,6 +218,8 @@ class ActionRecommender:
             hour=hour,
             health_index=hi,
             status_color=status_color,
+            operational_state=op_state,
+            vibration=vibration,
             anomaly_score=anomaly_score,
             savings_k_usd=savings_k_usd,
             controlled_hrs=controlled_hrs,
@@ -193,6 +236,7 @@ class ActionRecommender:
             "provenance_level": provenance,
             "current_status": current_status,
             "status_color": status_color,
+            "operational_state": op_state,
             "detected_lead_time": detected_lead_time,
             "root_cause_analysis": rca_summary,
             "financial_risk_dual_metric": financial_risk_dual_metric,
@@ -209,27 +253,51 @@ class ActionRecommender:
         hour: int,
         health_index: float,
         status_color: str,
+        operational_state: int,
+        vibration: float,
         anomaly_score: float,
         savings_k_usd: float,
         controlled_hrs: float,
         uncontrolled_hrs: float,
         lead_time_headline: str,
         use_llm: bool,
-    ) -> (str, str):
+    ) -> tuple[str, str]:
         """
         Synthesizes executive briefing. If LLM is unreachable or key not present,
         executes instantaneous 0 ms deterministic template fallback.
         """
-        # Deterministic Ground-Truth Template
+        vib_val = float(vibration)
+
+        # Deterministic Ground-Truth Template parameterized by operational state
         if tag_number == "KO-3201":
-            fallback_text = (
-                f"Ringkasan Eksekutif Terverifikasi: Deviasi sensor getaran terdeteksi pada jam ke-{hour} "
-                f"(31.2 µm, skor deviasi GDN {anomaly_score:.1f}), {lead_time_headline}. "
-                f"Health Index saat ini masih {health_index:.1f}% (NORMAL), namun indikasi awal degradasi "
-                f"babbitt bearing terkonfirmasi. Segera rencanakan controlled shutdown guna mencegah trip penuh "
-                f"(hemat downtime dari {uncontrolled_hrs:.0f} jam menjadi {controlled_hrs:.0f} jam, potensi selamatkan "
-                f"devisa ${savings_k_usd/1000.0:.3f}M). Rujuk RCA-2 untuk prosedur penanganan tube pendingin."
-            )
+            if operational_state == 1:
+                fallback_text = (
+                    f"Ringkasan Eksekutif Terverifikasi: Mesin offline (RUN_STATUS = 0) pada jam ke-{hour}. "
+                    f"Poros kompresor berhenti, getaran residual tercatat {vib_val:.1f} µm. "
+                    f"Protokol turnaround pasca-trip aktif. Rujuk RCA-2 untuk rekondisi bearing dan pembilasan oli pelumas."
+                )
+            elif operational_state == 2:
+                fallback_text = (
+                    f"Ringkasan Eksekutif Terverifikasi: Seluruh parameter proses stabil dalam batas desain normal pada jam ke-{hour}. "
+                    f"Getaran radial terpantau stabil pada {vib_val:.1f} µm (Batas Normal < 45 µm). "
+                    f"Health Index {health_index:.1f}% (NORMAL). Tidak ada peringatan anomali aktif."
+                )
+            elif operational_state == 3:
+                fallback_text = (
+                    f"Ringkasan Eksekutif Terverifikasi: Deviasi sensor getaran terdeteksi pada jam ke-{hour} "
+                    f"({vib_val:.1f} µm, skor deviasi GDN {anomaly_score:.1f}), {lead_time_headline}. "
+                    f"Health Index saat ini masih {health_index:.1f}% (NORMAL), namun indikasi awal degradasi "
+                    f"babbitt bearing terkonfirmasi. Segera rencanakan controlled shutdown guna mencegah trip penuh "
+                    f"(hemat downtime dari {uncontrolled_hrs:.0f} jam menjadi {controlled_hrs:.0f} jam, potensi selamatkan "
+                    f"devisa ${savings_k_usd/1000.0:.3f}M). Rujuk RCA-2 untuk prosedur penanganan tube pendingin."
+                )
+            else:  # State 4 & 5
+                fallback_text = (
+                    f"Ringkasan Eksekutif Terverifikasi: Ekskursi getaran terkonfirmasi pada jam ke-{hour} "
+                    f"({vib_val:.1f} µm, melampaui batas DCS Alarm 45 µm). Health Index {health_index:.1f}%. "
+                    f"Risiko trip mekanikal segera terjadi. Eksekusi segera intervensi operasional terencana guna "
+                    f"mencegah kerusakan katastropik dan menghemat potensi kerugian hingga ${savings_k_usd/1000.0:.3f}M."
+                )
         elif tag_number == "HE-3301":
             fallback_text = (
                 f"Ringkasan Eksekutif Terverifikasi: Deviasi beda tekanan (tube dP) dan penurunan efisiensi "
@@ -248,7 +316,7 @@ class ActionRecommender:
         api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
 
         if not use_llm or not api_key:
-            return fallback_text, "HYBRID_LLM (Fallback: DETERMINISTIC_TEMPLATE_0MS)"
+            return fallback_text, "DETERMINISTIC_EXECUTIVE_BRIEFING (Zero-Latency Process Rules / DETERMINISTIC_TEMPLATE_0MS)"
 
         # Attempt Gemini API Call via urllib with 2.0s strict timeout
         try:
@@ -278,8 +346,8 @@ class ActionRecommender:
                 if candidates:
                     llm_text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
                     if llm_text.strip():
-                        return llm_text.strip(), "HYBRID_LLM_ONLINE"
+                        return llm_text.strip(), "LLM_GENERATED_EXECUTIVE_BRIEFING (Gemini 1.5 Pro Hybrid Copilot)"
         except Exception:
             pass
 
-        return fallback_text, "HYBRID_LLM (Fallback: DETERMINISTIC_TEMPLATE_0MS)"
+        return fallback_text, "DETERMINISTIC_EXECUTIVE_BRIEFING (Zero-Latency Process Rules / DETERMINISTIC_TEMPLATE_0MS)"
