@@ -5,6 +5,14 @@ Features: 3-Stage Autonomous Diagnostic Reasoning, Interactive What-If Copilot,
 1-Click SAP PM Work Order Dispatcher, and Authentic 2-Loop Industrial P&ID.
 """
 
+import sys
+from pathlib import Path
+
+# Ensure project root is in sys.path when deployed on Streamlit Cloud
+root_dir = Path(__file__).resolve().parents[2]
+if str(root_dir) not in sys.path:
+    sys.path.insert(0, str(root_dir))
+
 import streamlit as st
 import streamlit.components.v1 as components
 import pandas as pd

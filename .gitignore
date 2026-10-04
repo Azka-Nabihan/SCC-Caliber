@@ -3,9 +3,12 @@
 # ==========================================
 
 # Data Pabrik & File Besar (Kerahasiaan Data & NDA)
-data/
+data/*
+!data/processed/
+data/processed/*
+!data/processed/KO3201_stage2_scores.csv
+!data/processed/incidents_cleaned.csv
 *.xlsx
-*.csv
 *.zip
 
 # Dokumen Riset, Ideasi, Blueprint & Konfigurasi Lokal

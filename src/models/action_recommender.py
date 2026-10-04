@@ -403,6 +403,21 @@ class ActionRecommender:
 
     @staticmethod
     def _get_gemini_api_key() -> Optional[str]:
+        # 1. Streamlit Secrets (Streamlit Community Cloud deployment)
+        try:
+            import streamlit as st
+            if hasattr(st, "secrets"):
+                if "GEMINI_API_KEY" in st.secrets:
+                    val = str(st.secrets["GEMINI_API_KEY"]).strip()
+                    if val:
+                        return val
+                elif "GOOGLE_API_KEY" in st.secrets:
+                    val = str(st.secrets["GOOGLE_API_KEY"]).strip()
+                    if val:
+                        return val
+        except Exception:
+            pass
+
         key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
         if key and key.strip():
             return key.strip()
