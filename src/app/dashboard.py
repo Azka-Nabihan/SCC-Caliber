@@ -404,11 +404,24 @@ def main():
             active_q = st.session_state.copilot_active_query
             copilot_res = provider.run_copilot_simulation(active_q, current_hour)
 
+            engine_status = copilot_res.get("engine_status", "OFFLINE_FALLBACK")
+            if engine_status == "LIVE_ONLINE":
+                badge_html = '<span style="background:rgba(16,185,129,0.15); color:#10B981; border:1px solid #10B981; padding:2px 8px; border-radius:3px; font-size:10px; font-weight:700; letter-spacing:0.5px;">LIVE PROCESS COPILOT (ONLINE CLOUD MODE)</span>'
+                border_accent = "#10B981"
+            else:
+                badge_html = '<span style="background:rgba(148,163,184,0.15); color:#94A3B8; border:1px solid #475569; padding:2px 8px; border-radius:3px; font-size:10px; font-weight:700; letter-spacing:0.5px;">DETERMINISTIC RULE ENGINE (0 MS OFFLINE FALLBACK)</span>'
+                border_accent = "#818CF8"
+
             st.markdown(
                 f"""
-                <div style="background:#1E293B; border:1px solid #334155; border-left:3px solid #818CF8; border-radius:4px; padding:12px 14px; font-size:12px; margin-top:8px;">
-                    <div style="font-weight:700; color:#818CF8; font-size:11px; text-transform:uppercase; margin-bottom:4px;">
-                        Simulation Scenario: {copilot_res['scenario_title']}
+                <div style="background:#1E293B; border:1px solid #334155; border-left:3px solid {border_accent}; border-radius:4px; padding:12px 14px; font-size:12px; margin-top:8px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid #334155; padding-bottom:6px;">
+                        <div style="font-weight:700; color:{border_accent}; font-size:11px; text-transform:uppercase;">
+                            {copilot_res['scenario_title']}
+                        </div>
+                        <div>
+                            {badge_html}
+                        </div>
                     </div>
                     <div style="color:#F8FAFC; line-height:1.5; white-space:pre-line;">
                         {copilot_res['answer']}

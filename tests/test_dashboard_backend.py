@@ -327,3 +327,18 @@ def test_2loop_pid_mimic_traces(data_provider):
     assert "HE-3301" in joined_text or "LUBE OIL COOLER" in joined_text
 
 
+def test_data_provider_copilot_clean_status(data_provider):
+    """
+    Test 13: Verifies that copilot responses return clean engine_status and source
+    without icons/emojis and without prohibited AI brand names.
+    """
+    res = data_provider.run_copilot_simulation("Apa batas vibrasi?", current_hour=633, use_llm=False)
+    assert "engine_status" in res
+    assert res["engine_status"] in ["LIVE_ONLINE", "OFFLINE_FALLBACK"]
+    assert "source" in res
+    assert "gemini" not in res["source"].lower()
+    assert "gpt" not in res["source"].lower()
+    assert "🟢" not in res["source"]
+    assert "🛡️" not in res["source"]
+
+

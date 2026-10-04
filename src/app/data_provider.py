@@ -6,6 +6,7 @@ and Plant ZCU Fleet Reliability & Risk Priority aggregations.
 """
 
 import json
+import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
@@ -292,16 +293,25 @@ class DashboardDataProvider:
             use_llm=True,
         )
 
-    def run_copilot_simulation(self, query: str, current_hour: int = 633) -> Dict[str, Any]:
+    def run_copilot_simulation(
+        self,
+        query: str,
+        current_hour: int = 633,
+        use_llm: Optional[bool] = None,
+    ) -> Dict[str, Any]:
         """
         Runs an operational What-If query simulation through the recommender engine.
+        Defaults to Online-First in production, and deterministic 0 ms fallback in unit tests.
         """
+        if use_llm is None:
+            use_llm = "PYTEST_CURRENT_TEST" not in os.environ
+
         snap = self.get_hour_snapshot(current_hour)
         return self.recommender.query_copilot_simulation(
             query_text=query,
             tag_number="KO-3201",
             anomaly_info=snap,
-            use_llm=True,
+            use_llm=use_llm,
         )
 
     def generate_sap_work_order(self, current_hour: int = 633) -> Dict[str, Any]:
