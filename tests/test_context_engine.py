@@ -145,7 +145,7 @@ def test_action_card_hour_633_status(action_recommender):
     assert "98.6%" in card["current_status"]
     assert "NORMAL" in card["current_status"]
     assert card["status_color"] == "AMBER"
-    assert "16 Jam" in card["detected_lead_time"]["headline"]
+    assert "16 Hours" in card["detected_lead_time"]["headline"]
     assert "45 µm" in card["detected_lead_time"]["headline"]
 
 
@@ -163,7 +163,7 @@ def test_offline_fallback_guardrail(action_recommender):
     elapsed_ms = (time.perf_counter() - t0) * 1000.0
 
     assert elapsed_ms < 20.0
-    assert "Ringkasan Eksekutif Terverifikasi" in card["copilot_shift_briefing"]
+    assert "Verified Executive Briefing" in card["copilot_shift_briefing"]
     assert "$1.188M" in card["copilot_shift_briefing"]
     assert "DETERMINISTIC_TEMPLATE_0MS" in card["synthesis_mode"]
 

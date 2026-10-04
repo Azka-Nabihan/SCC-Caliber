@@ -75,7 +75,7 @@ def test_get_hour_snapshots_across_states(data_provider):
     assert "EARLY WARNING" in snap633["current_status"]
     assert snap633["health_index"] == pytest.approx(98.58, rel=1e-2)
     assert snap633["vibration"] == pytest.approx(31.24, rel=1e-2)
-    assert "16 Jam" in snap633["detected_lead_time"]["headline"]
+    assert "16 Hours" in snap633["detected_lead_time"]["headline"]
 
     # Hour 649 Check
     snap649 = data_provider.get_hour_snapshot(649)
@@ -265,17 +265,17 @@ def test_copilot_what_if_simulation(data_provider):
     """
     # 1. Rate cut
     res_rate = data_provider.run_copilot_simulation("Simulasi rate 10%", current_hour=633)
-    assert "18%" in res_rate["answer"] or "beban" in res_rate["answer"].lower()
+    assert "18%" in res_rate["answer"] or "load" in res_rate["answer"].lower()
     assert "1.188M" in res_rate["answer"]
 
     # 2. Babbitt risk
     res_risk = data_provider.run_copilot_simulation("Risiko babbitt wipe-out", current_hour=633)
     assert "AR-2026-ZCU-0142" in res_risk["answer"]
-    assert "32 jam" in res_risk["answer"].lower()
+    assert "32" in res_risk["answer"] and ("hours" in res_risk["answer"].lower() or "hrs" in res_risk["answer"].lower())
 
     # 3. Shutdown protocol
     res_sop = data_provider.run_copilot_simulation("Protokol shutdown 8 jam", current_hour=633)
-    assert "8.0 Jam" in res_sop["answer"] or "8 jam" in res_sop["answer"].lower()
+    assert "8.0 Hours" in res_sop["answer"] or "8 hours" in res_sop["answer"].lower()
 
     # 4. Temperature query (exact user query: "berapa batas temperatur aman oli pendingin?")
     res_temp = data_provider.run_copilot_simulation("berapa batas temperatur aman oli pendingin?", current_hour=633)

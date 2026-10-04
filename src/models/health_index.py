@@ -1,6 +1,6 @@
 """
 Equipment Health Index Engine (0 - 100%).
-Mengacu pada ISO 10816-3 dan referensi paper arXiv:2405.04990.
+Compliant with ISO 10816-3 standards and arXiv:2405.04990 reference methodology.
 
 Penalty per parameter (0-100) is the distance from `normal` towards `trip`,
 respecting the limit direction (upper: rising is bad, lower: falling is bad).

@@ -487,11 +487,11 @@ def main():
             selected_query = None
 
             if p_col1.button("Simulate 10% Rate Cut", use_container_width=True, help="Simulate extending lead time via load reduction"):
-                selected_query = "Simulasi penurunan laju alir 10% pada kompresor"
+                selected_query = "Simulate 10% rate reduction on compressor"
             if p_col2.button("Babbitt Wipe-Out Risk", use_container_width=True, help="Assess mechanical catastrophic risk if run unmitigated"):
-                selected_query = "Analisis risiko catastrophic babbitt wipe-out jika mesin dipaksa beroperasi"
+                selected_query = "Assess catastrophic babbitt wipe-out risk under unmitigated operation"
             if p_col3.button("Shutdown Protocol (8h)", use_container_width=True, help="Step-by-step controlled shutdown SOP"):
-                selected_query = "Prosedur urutan controlled shutdown 8 jam terencana"
+                selected_query = "Planned 8-hour controlled shutdown protocol sequence"
 
             custom_q = st.text_input(
                 "Ask Copilot a Custom Operational Question:",
@@ -502,7 +502,7 @@ def main():
                 selected_query = custom_q.strip()
 
             if "copilot_active_query" not in st.session_state:
-                st.session_state.copilot_active_query = "Simulasi penurunan laju alir 10% pada kompresor"
+                st.session_state.copilot_active_query = "Simulate 10% rate reduction on compressor"
 
             if selected_query:
                 st.session_state.copilot_active_query = selected_query
