@@ -359,3 +359,140 @@ class DashboardDataProvider:
             tag_number="KO-3201",
             anomaly_info=snap,
         )
+
+    def get_pareto_failure_mechanisms(self, top_n: int = 8) -> pd.DataFrame:
+        """
+        Aggregates plant-wide historical failures by failure mechanism (f_mechanism)
+        to identify the top loss drivers across all 380 incidents (Solution M2, C4).
+        """
+        df_inc = self.incidents_df.copy()
+        grouped = df_inc.groupby("f_mechanism").agg(
+            loss_k_usd=("actual_loss_k_usd", "sum"),
+            downtime_hrs=("downtime_hrs", "sum"),
+            incident_count=("serial_no", "count"),
+        ).reset_index()
+        grouped = grouped.sort_values(by="loss_k_usd", ascending=False).reset_index(drop=True)
+
+        total_loss = grouped["loss_k_usd"].sum()
+        grouped["cumulative_loss_k_usd"] = grouped["loss_k_usd"].cumsum()
+        grouped["cumulative_loss_pct"] = (grouped["cumulative_loss_k_usd"] / total_loss) * 100.0
+
+        return grouped.head(top_n)
+
+    def get_pareto_bad_actors(self, top_n: int = 10) -> pd.DataFrame:
+        """
+        Aggregates plant-wide historical failures by bad actor equipment (tag_number, plant)
+        to rank the highest financial loss assets across all 380 incidents (Solution M2, C4).
+        Highlights Pilot Asset KO-3201 as the #1 bad actor in the entire enterprise portfolio.
+        """
+        df_inc = self.incidents_df.copy()
+        grouped = df_inc.groupby(["tag_number", "plant"]).agg(
+            loss_k_usd=("actual_loss_k_usd", "sum"),
+            downtime_hrs=("downtime_hrs", "sum"),
+            incident_count=("serial_no", "count"),
+            case_title=("case_title", "first"),
+        ).reset_index()
+        grouped = grouped.sort_values(by="loss_k_usd", ascending=False).reset_index(drop=True)
+
+        total_loss = grouped["loss_k_usd"].sum()
+        grouped["cumulative_loss_k_usd"] = grouped["loss_k_usd"].cumsum()
+        grouped["cumulative_loss_pct"] = (grouped["cumulative_loss_k_usd"] / total_loss) * 100.0
+        grouped["is_pilot"] = grouped["tag_number"] == "KO-3201"
+
+        return grouped.head(top_n)
+
+    def get_root_cause_matrix(self, framework: str = "4M1E") -> List[Dict[str, Any]]:
+        """
+        Returns structured root cause failure breakdown for Pilot Asset KO-3201 incident.
+        Supports 4M+1E (Manufacturing standard) and 4P (Process reliability standard).
+        """
+        fw = framework.upper().replace("+", "")
+        if "4P" in fw:
+            return [
+                {
+                    "category": "PLANT",
+                    "element": "Lube Oil Cooler (HE-3301)",
+                    "finding": "Pinhole tube breach and shell-side foulant accumulation in lube oil cooler bundle.",
+                    "status": "Asset Defect",
+                    "evidence": "Cooler dP > 0.6 bar high limit; water ingress into lubricant system.",
+                    "mitigation": "Retube cooler bundle during next turnaround; isolate and plug leaking tubes immediately.",
+                    "color": "#EF4444",
+                },
+                {
+                    "category": "PROCESS",
+                    "element": "Oil Temperature & Viscosity",
+                    "finding": "Lube oil temperature reached 64.5 °C, causing viscosity thinning and loss of hydrodynamic wedge.",
+                    "status": "Envelope Excursion",
+                    "evidence": "Sensor TI-3301 reached 42.5 °C ex-cooler and bearing temp TI-3201 reached 64.5 °C.",
+                    "mitigation": "Activate secondary auxiliary lube pump and switch cooling water valve to full bypass.",
+                    "color": "#F59E0B",
+                },
+                {
+                    "category": "PEOPLE",
+                    "element": "Shift Handoff & Notification",
+                    "finding": "Delayed operator notification prior to high radial vibration DCS 45 µm alarm trip.",
+                    "status": "HMI Awareness Lag",
+                    "evidence": "Standard DCS alarm only triggered at 45 µm (16 hours after GDN anomaly detection at Hr 633).",
+                    "mitigation": "Configure automated early warning popup on CBM console at tau = 3.11 threshold.",
+                    "color": "#818CF8",
+                },
+                {
+                    "category": "PROGRAM",
+                    "element": "Maintenance Strategy (SAP PM)",
+                    "finding": "Time-based calendar PM (6-month cleaning cycle) failed to detect rapid condition-based fouling.",
+                    "status": "Strategy Gap",
+                    "evidence": "Cooler tube fouling accelerated by upstream heavy-ends variation before scheduled PM03 window.",
+                    "mitigation": "Transition HE-3301 cleaning trigger from fixed calendar to dP soft-sensor condition threshold.",
+                    "color": "#38BDF8",
+                },
+            ]
+
+        # Default: 4M+1E Framework
+        return [
+            {
+                "category": "MACHINE",
+                "element": "DE Journal Bearing (KO-3201)",
+                "finding": "Babbitt liner wear and journal micro-rubbing causing progressive radial vibration escalation.",
+                "status": "Observed Symptom",
+                "evidence": "Telemetry Tag VI-3201 reached 31.24 µm (Hr 633) with GDN anomaly score 10.72.",
+                "mitigation": "Reserve OEM spare babbitt insert sleeve (BBR-3201-DE) for 8h controlled turnaround.",
+                "color": "#38BDF8",
+            },
+            {
+                "category": "MATERIAL",
+                "element": "Synthetic Lubricant (ISO VG 46)",
+                "finding": "Lube oil viscosity thinned and emulsified by cooling water ingress through cooler tube leak.",
+                "status": "Direct Physical Trigger",
+                "evidence": "Laboratory sample confirmed 1,800 ppm water-in-oil contamination (design limit < 500 ppm).",
+                "mitigation": "Drain sump tank, flush piping with clean oil charge, and install inline moisture sensor.",
+                "color": "#F59E0B",
+            },
+            {
+                "category": "METHOD",
+                "element": "Exchanger Cleaning Protocol",
+                "finding": "Lube oil cooler cleaning was delayed past scheduled 6-month interval due to production load priorities.",
+                "status": "Latent Root Cause",
+                "evidence": "Maintenance log reveals HE-3301 last descaled 9 months prior; fouling dP unmonitored.",
+                "mitigation": "Implement condition-based cleaning trigger based on exchanger dP hysteresis.",
+                "color": "#EF4444",
+            },
+            {
+                "category": "MAN",
+                "element": "Shift Round Inspection",
+                "finding": "Daily manual drain check on lube sump bottom boot was missed during preceding 2 operating shifts.",
+                "status": "Contributing Factor",
+                "evidence": "Shift inspection log lacked signed verification for sump drain valve boot purging.",
+                "mitigation": "Mandate digital shift barcode verification for daily water drain rounds.",
+                "color": "#818CF8",
+            },
+            {
+                "category": "ENVIRONMENT",
+                "element": "Ambient Heat Excursion",
+                "finding": "Midday ambient air temperature reached 35 °C, reducing cooling water heat rejection capacity.",
+                "status": "Operating Condition",
+                "evidence": "Plant weather telemetry recorded +4.5 °C above monthly average wet-bulb temperature.",
+                "mitigation": "Ensure cooling tower auxiliary fan staging activates when ambient temp exceeds 32 °C.",
+                "color": "#10B981",
+            },
+        ]
+

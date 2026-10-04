@@ -814,3 +814,125 @@ def create_pf_escalation_chart(
     )
 
     return fig
+
+
+def create_pareto_chart(
+    df: pd.DataFrame,
+    view_type: str = "mechanism",
+) -> go.Figure:
+    """
+    Renders an authentic industrial Pareto Chart (80/20 Rule) for Plant Failure Analysis (Solution M2, C4).
+    Primary Y-axis (Bars): Actual Financial Loss in Million USD ($M).
+    Secondary Y-axis (Line): Cumulative Loss Percentage (0% to 100%) with 80% guideline.
+    """
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+
+    if view_type == "bad_actors":
+        x_labels = [f"{r['tag_number']} ({r['plant']})" for _, r in df.iterrows()]
+        bar_colors = [CHANDRA_THEME["amber"] if r.get("is_pilot", False) else "#334155" for _, r in df.iterrows()]
+        bar_hover = [
+            f"<b>{r['tag_number']} ({r['plant']})</b><br>"
+            f"Equipment: {r.get('case_title', 'Subsystem')}<br>"
+            f"Loss: ${r['loss_k_usd']/1000.0:.2f}M USD (${r['loss_k_usd']:,.1f}k)<br>"
+            f"Downtime: {r['downtime_hrs']:.1f} Hours<br>"
+            f"{'<b>PILOT ASSET (RCA-2 FOCUS)</b>' if r.get('is_pilot', False) else ''}<extra></extra>"
+            for _, r in df.iterrows()
+        ]
+        title_text = "Top Bad Actor Equipment: Plant Complex Financial Exposure ($M USD)"
+    else:
+        x_labels = df["f_mechanism"].tolist()
+        bar_colors = [
+            CHANDRA_THEME["cyan"] if idx == 0 else (CHANDRA_THEME["yellow"] if idx == 1 else "#334155")
+            for idx in range(len(df))
+        ]
+        bar_hover = [
+            f"<b>{r['f_mechanism']}</b><br>"
+            f"Financial Loss: ${r['loss_k_usd']/1000.0:.2f}M USD (${r['loss_k_usd']:,.1f}k)<br>"
+            f"Total Downtime: {r['downtime_hrs']:.1f} Hours<br>"
+            f"Incident Count: {r['incident_count']} Events<extra></extra>"
+            for _, r in df.iterrows()
+        ]
+        title_text = "Top Failure Mechanisms: Plant Complex Financial Exposure ($M USD)"
+
+    losses_m = df["loss_k_usd"] / 1000.0
+    cum_pct = df["cumulative_loss_pct"]
+
+    # Bars: Financial Loss ($M USD)
+    fig.add_trace(
+        go.Bar(
+            x=x_labels,
+            y=losses_m,
+            name="Actual Loss ($M USD)",
+            marker=dict(color=bar_colors, line=dict(color="#475569", width=1)),
+            hovertemplate=bar_hover,
+        ),
+        secondary_y=False,
+    )
+
+    # Line: Cumulative Percentage
+    fig.add_trace(
+        go.Scatter(
+            x=x_labels,
+            y=cum_pct,
+            name="Cumulative Loss (%)",
+            mode="lines+markers",
+            line=dict(color=CHANDRA_THEME["yellow"], width=2.5),
+            marker=dict(size=7, color=CHANDRA_THEME["yellow"]),
+            hovertemplate="Cumulative Loss: %{y:.1f}%<extra></extra>",
+        ),
+        secondary_y=True,
+    )
+
+    # Pareto 80% Guideline (Bounded strictly to secondary percentage y2 axis)
+    fig.add_shape(
+        type="line",
+        x0=0, x1=1, xref="paper",
+        y0=80.0, y1=80.0, yref="y2",
+        line=dict(color=CHANDRA_THEME["red"], width=1.5, dash="dash"),
+    )
+    fig.add_annotation(
+        x=1, xref="paper",
+        y=80.0, yref="y2",
+        text="80% Pareto Cutoff",
+        showarrow=False,
+        xanchor="right", yanchor="bottom",
+        font=dict(color=CHANDRA_THEME["red"], size=10),
+    )
+
+    max_loss = float(losses_m.max()) if len(losses_m) > 0 else 1.0
+    y1_upper = max(max_loss * 1.25, 0.5)
+
+    fig.update_layout(
+        title=dict(
+            text=title_text,
+            font=dict(size=12, color=CHANDRA_THEME["text_secondary"]),
+        ),
+        paper_bgcolor=CHANDRA_THEME["card_bg"],
+        plot_bgcolor=CHANDRA_THEME["card_bg"],
+        font=dict(color=CHANDRA_THEME["text_primary"], family="Inter, sans-serif"),
+        height=360,
+        margin=dict(l=45, r=45, t=45, b=35),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        hovermode="x unified",
+    )
+    fig.update_xaxes(
+        gridcolor=CHANDRA_THEME["card_border"],
+        tickfont=dict(size=10, color=CHANDRA_THEME["text_secondary"]),
+    )
+    fig.update_yaxes(
+        gridcolor=CHANDRA_THEME["card_border"],
+        title_text="Loss ($M USD)",
+        title_font=dict(size=10, color=CHANDRA_THEME["cyan"]),
+        range=[0, y1_upper],
+        secondary_y=False,
+    )
+    fig.update_yaxes(
+        showgrid=False,
+        title_text="Cumulative (%)",
+        title_font=dict(size=10, color=CHANDRA_THEME["yellow"]),
+        range=[0, 105],
+        secondary_y=True,
+    )
+
+    return fig
+

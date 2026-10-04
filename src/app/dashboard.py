@@ -28,6 +28,7 @@ from src.app.charts import (
     create_telemetry_trend_chart,
     create_process_mimic_chart,
     create_pf_escalation_chart,
+    create_pareto_chart,
 )
 
 # Page Configuration (Industrial English UI, Clean Standards)
@@ -555,6 +556,49 @@ def main():
             unsafe_allow_html=True,
         )
 
+        st.markdown("<div style='margin-top:14px;'></div>", unsafe_allow_html=True)
+
+        # Structured Root Cause Failure Breakdown Matrix (4M+1E / 4P)
+        st.markdown("#### Root Cause Failure Decomposition Matrix (RCA-2 Grounded)")
+        st.caption("Standardized industrial decomposition verifying mechanical, material, procedural, and environmental factors:")
+
+        rc_toggle = st.radio(
+            "Select Root Cause Analysis Framework:",
+            options=["4M+1E Framework (Manufacturing Standard)", "4P Framework (Process Reliability Standard)"],
+            horizontal=True,
+            key="tab1_rc_framework_toggle",
+        )
+        rc_fw = "4M1E" if "4M+1E" in rc_toggle else "4P"
+        rc_matrix = provider.get_root_cause_matrix(rc_fw)
+
+        rc_cols = st.columns(len(rc_matrix))
+        for idx, item in enumerate(rc_matrix):
+            with rc_cols[idx]:
+                st.markdown(
+                    f"""
+                    <div style="background:#1E293B; border:1px solid #334155; border-top:3px solid {item['color']}; border-radius:4px; padding:10px 12px; height:100%; font-size:11px;">
+                        <div style="font-weight:700; color:{item['color']}; text-transform:uppercase; font-size:11px; margin-bottom:2px; font-family:'Inter', monospace;">
+                            {item['category']}
+                        </div>
+                        <div style="font-weight:600; color:#F8FAFC; margin-bottom:4px;">
+                            {item['element']}
+                        </div>
+                        <div style="margin-bottom:6px;">
+                            <span style="background:rgba(255,255,255,0.08); color:#CBD5E1; border:1px solid #475569; padding:1px 5px; border-radius:3px; font-size:9px; font-weight:600;">
+                                {item['status']}
+                            </span>
+                        </div>
+                        <div style="color:#94A3B8; line-height:1.4; margin-bottom:6px;">
+                            <b>Finding:</b> {item['finding']}
+                        </div>
+                        <div style="color:#64748B; font-size:10px; border-top:1px solid #334155; padding-top:4px;">
+                            <b>Evidence:</b> {item['evidence']}
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
     # =========================================================================
     # TAB 2: SENSORS & PROCESS DIAGRAM
     # =========================================================================
@@ -1008,7 +1052,43 @@ def main():
         fc3.metric("Monitored ZCU Assets", f"{fleet_meta['total_assets']} Equipment", "17 Rotary | 10 Elec | 29 Static")
         fc4.metric("Data Provenance Ratio", "2 FACT : 54 HYPOTHESIS", "Official RCAs vs FMEA Engineering")
 
-        st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='margin-top:14px;'></div>", unsafe_allow_html=True)
+
+        # Enterprise Pareto Failure Mechanisms & Bad Actor Equipment Analysis
+        st.markdown("#### Enterprise Pareto Loss Distribution (380 Historical Incidents)")
+        st.caption("Cross-plant Pareto exposure analysis ($67.19M total complex impact) demonstrating failure driver concentration:")
+
+        pareto_view = st.radio(
+            "Select Pareto Analysis View:",
+            options=["By Failure Mechanism (Damage Drivers)", "By Worst Performing Equipment (Bad Actors)"],
+            horizontal=True,
+            key="tab4_pareto_view_toggle",
+        )
+
+        if "Failure Mechanism" in pareto_view:
+            df_pareto = provider.get_pareto_failure_mechanisms(top_n=8)
+            st.plotly_chart(create_pareto_chart(df_pareto, view_type="mechanisms"), use_container_width=True)
+        else:
+            df_pareto = provider.get_pareto_bad_actors(top_n=10)
+            st.plotly_chart(create_pareto_chart(df_pareto, view_type="bad_actors"), use_container_width=True)
+
+        st.markdown(
+            """
+            <div style="background:#1E293B; border:1px solid #334155; border-left:3px solid #F59E0B; border-radius:4px; padding:10px 14px; font-size:11px; margin-bottom:14px;">
+                <div style="font-weight:700; color:#F59E0B; text-transform:uppercase; font-size:11px; margin-bottom:2px;">
+                    Strategic Reliability Insight (Enterprise Bad Actor Ranking)
+                </div>
+                <div style="color:#F8FAFC; line-height:1.4;">
+                    Pilot Asset <b>KO-3201 (Plant ZCU)</b> is ranked <b>#1 highest-loss equipment</b> across the entire 12-plant complex ($1,584.0k actual loss, 32.0 hours downtime). Proactive lube oil cooler (HE-3301) maintenance directly prevents the single highest financial impact failure mode in Chandra Asri operations.
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        st.markdown("---")
+        st.markdown("#### Monitored Plant ZCU Equipment Register")
+        st.caption("Comprehensive 56-asset operational criticality and failure mode catalog:")
 
         # Interactive Fleet Filters
         filt_c1, filt_c2, filt_c3, filt_c4 = st.columns(4)
