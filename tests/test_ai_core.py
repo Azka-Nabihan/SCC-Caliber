@@ -117,3 +117,41 @@ def test_predict_step_streaming_interface(df, gdn):
     assert step["top_contributors"][0][0] == "KO3201_VIB"
     hi = HealthIndexCalculator().predict_step(df.iloc[t], df.iloc[t - 24:t])
     assert 0 <= hi["health_index"] <= 100
+
+
+def test_copilot_simulation_engine_status_and_key_acceptance():
+    from src.models.action_recommender import ActionRecommender
+    recommender = ActionRecommender()
+    res = recommender.query_copilot_simulation("Test query", use_llm=False)
+    assert "engine_status" in res
+    assert res["engine_status"] in ["LIVE_ONLINE", "OFFLINE_FALLBACK"]
+
+
+def test_online_first_copilot_fallback_and_sensor_context():
+    from src.models.action_recommender import ActionRecommender
+    recommender = ActionRecommender()
+    snap = {
+        "hour": 633,
+        "vibration": 31.24,
+        "anomaly_score": 10.72,
+        "health_index": 98.6,
+    }
+    res = recommender.query_copilot_simulation("Sebutkan seluruh sensor P&ID", anomaly_info=snap, use_llm=False)
+    assert res["scenario_title"] != ""
+    assert len(res["answer"]) > 50
+    assert "source" in res
+    assert "gemini" not in res["source"].lower()
+    assert "🛡️" not in res["source"]
+    assert "🟢" not in res["source"]
+    assert res["engine_status"] == "OFFLINE_FALLBACK"
+
+
+def test_copilot_query_caching():
+    from src.models.action_recommender import ActionRecommender
+    recommender = ActionRecommender()
+    snap = {"hour": 633, "vibration": 31.24}
+    res1 = recommender.query_copilot_simulation("Risiko babbitt wipe-out", anomaly_info=snap, use_llm=False)
+    res2 = recommender.query_copilot_simulation("Risiko babbitt wipe-out", anomaly_info=snap, use_llm=False)
+    assert res1 == res2
+    cache_key = f"KO-3201_633_risiko babbitt wipe-out_False"
+    assert cache_key in recommender._query_cache

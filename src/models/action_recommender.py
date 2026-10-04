@@ -77,6 +77,8 @@ class ActionRecommender:
         else:
             self.matcher = IncidentMatcher(zcu_knowledge_path=self.knowledge_path)
 
+        self._query_cache: Dict[str, Dict[str, Any]] = {}
+
     def generate_action_card(
         self,
         tag_number: str,
@@ -316,14 +318,13 @@ class ActionRecommender:
         api_key = self._get_gemini_api_key()
 
         if not use_llm or not api_key:
-            return fallback_text, "DETERMINISTIC_EXECUTIVE_BRIEFING (Zero-Latency Process Rules / DETERMINISTIC_TEMPLATE_0MS)"
+            return fallback_text, "EXECUTIVE_BRIEFING (Deterministic 0 ms Rules / DETERMINISTIC_TEMPLATE_0MS)"
 
-        # Attempt Gemini API Call via urllib with 2.0s strict timeout
+        # Attempt Gemini API Call via urllib with 3.5s strict timeout
         try:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
             prompt = (
                 f"Bertindaklah sebagai Operational Plant Copilot untuk Shift Briefing Chandra Asri Petrochemical. "
-                f"Buat 1 paragraf ringkas (maks 60 kata), profesional, tanpa buzzword, berbasis data fakta berikut:\n"
+                f"Buat 1 paragraf ringkas (maks 60 kata), profesional, tanpa buzzword, tanpa menyebutkan merk AI, berbasis data fakta berikut:\n"
                 f"- Tag: {tag_number} ({equipment_name})\n"
                 f"- Jam Deteksi: {hour} (Lead Time: {lead_time_headline})\n"
                 f"- Health Index: {health_index:.1f}% ({status_color})\n"
@@ -332,25 +333,36 @@ class ActionRecommender:
             )
             payload = {
                 "contents": [{"parts": [{"text": prompt}]}],
-                "generationConfig": {"temperature": 0.1, "maxOutputTokens": 120},
+                "generationConfig": {"temperature": 0.1, "maxOutputTokens": 600},
             }
-            req = urllib.request.Request(
-                url,
-                data=json.dumps(payload).encode("utf-8"),
-                headers={"Content-Type": "application/json"},
-                method="POST",
-            )
-            with urllib.request.urlopen(req, timeout=2.0) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-                candidates = data.get("candidates", [])
-                if candidates:
-                    llm_text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-                    if llm_text.strip():
-                        return llm_text.strip(), "LLM_GENERATED_EXECUTIVE_BRIEFING (Gemini 1.5 Pro Hybrid Copilot)"
+            candidate_models = ["gemini-flash-lite-latest", "gemini-flash-latest"]
+            for model_name in candidate_models:
+                try:
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+                    req = urllib.request.Request(
+                        url,
+                        data=json.dumps(payload).encode("utf-8"),
+                        headers={"Content-Type": "application/json"},
+                        method="POST",
+                    )
+                    with urllib.request.urlopen(req, timeout=5.0) as resp:
+                        data = json.loads(resp.read().decode("utf-8"))
+                        candidates = data.get("candidates", [])
+                        if candidates:
+                            cand = candidates[0]
+                            # If truncated by token limit, reject incomplete text
+                            if cand.get("finishReason") == "MAX_TOKENS":
+                                continue
+                            parts = cand.get("content", {}).get("parts", [])
+                            llm_text = "".join(p.get("text", "") for p in parts if "text" in p).strip()
+                            if llm_text and len(llm_text) >= 20:
+                                return llm_text, "EXECUTIVE_BRIEFING (Online Copilot Mode)"
+                except Exception:
+                    continue
         except Exception:
             pass
 
-        return fallback_text, "DETERMINISTIC_EXECUTIVE_BRIEFING (Zero-Latency Process Rules / DETERMINISTIC_TEMPLATE_0MS)"
+        return fallback_text, "EXECUTIVE_BRIEFING (Deterministic 0 ms Rules / DETERMINISTIC_TEMPLATE_0MS)"
 
     def generate_diagnostic_reasoning(
         self,
@@ -438,6 +450,46 @@ class ActionRecommender:
                 pass
         return None
 
+    def _retrieve_rag_context(
+        self,
+        tag_number: str = "KO-3201",
+        anomaly_info: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Retrieves grounded domain context from local ChemE knowledge, telemetry snapshot,
+        and historical RCA archive for RAG augmentation.
+        """
+        if anomaly_info is None:
+            anomaly_info = {}
+
+        tag_clean = str(tag_number).strip().upper()
+        eq_meta = self.knowledge.get(tag_clean, {})
+        hour = int(anomaly_info.get("hour", 633))
+        vib = float(anomaly_info.get("vibration", anomaly_info.get("KO3201_VIB", 31.24)))
+        score = float(anomaly_info.get("gdn_anomaly_score", anomaly_info.get("anomaly_score", 10.72)))
+        hi = float(anomaly_info.get("health_index", 98.6))
+        run_status = int(anomaly_info.get("run_status", 1))
+
+        # Retrieve matched incident
+        hist_match = self.matcher.match(
+            plant=eq_meta.get("plant", "ZCU"),
+            tag_number=tag_clean,
+            eq_class=eq_meta.get("eq_class", "B"),
+        )
+
+        return {
+            "tag_number": tag_clean,
+            "equipment_name": eq_meta.get("equipment_name", f"Equipment {tag_clean}"),
+            "hour": hour,
+            "vibration": vib,
+            "anomaly_score": score,
+            "health_index": hi,
+            "run_status": run_status,
+            "historical_incident": hist_match.get("matched_case", "AR-2026-ZCU-0142"),
+            "historical_loss_k_usd": hist_match.get("actual_loss_k_usd", 1584.0),
+            "historical_downtime_hrs": hist_match.get("downtime_hrs", 32.0),
+        }
+
     def query_copilot_simulation(
         self,
         query_text: str,
@@ -447,17 +499,90 @@ class ActionRecommender:
     ) -> Dict[str, Any]:
         """
         Evaluates operational What-If questions and physics scenarios with grounded reasoning.
-        Provides rich, deterministic chemical engineering knowledge with instant 0 ms fallback,
-        supplemented by Gemini LLM reasoning when API key is configured.
+        Implements Online-First RAG with strict petrochemical domain guardrails, in-memory query
+        caching, and instant 0 ms deterministic chemical engineering knowledge fallback.
         """
-        q_lower = query_text.lower()
-        api_key = self._get_gemini_api_key()
+        if anomaly_info is None:
+            anomaly_info = {}
 
+        q_lower = query_text.lower().strip()
+        hour = int(anomaly_info.get("hour", 633))
+        cache_key = f"{tag_number}_{hour}_{q_lower}_{use_llm}"
+
+        # 1. In-memory query cache lookup
+        if hasattr(self, "_query_cache") and cache_key in self._query_cache:
+            return self._query_cache[cache_key]
+
+        api_key = self._get_gemini_api_key()
+        rag_ctx = self._retrieve_rag_context(tag_number, anomaly_info)
+
+        # 2. Attempt Online Cloud Inference (when use_llm is True and api_key is available)
+        if use_llm and api_key:
+            try:
+                system_prompt = (
+                    "Bertindaklah sebagai Operational Plant Copilot berbasis fisika proses untuk Chandra Asri Petrochemical (Plant ZCU).\n"
+                    "ATURAN KETAT:\n"
+                    "1. Tolak dengan sopan jika ada pertanyaan di luar lingkup Plant ZCU atau rekayasa proses petrokimia.\n"
+                    "2. Dilarang keras mengarang nilai/batas baru atau menyebutkan merk/vendor sistem tertentu.\n"
+                    "3. Rujuk fakta dan batasan rekayasa resmi berikut:\n"
+                    f"- Peralatan: {rag_ctx['tag_number']} ({rag_ctx['equipment_name']}) & Lube Oil Cooler HE-3301\n"
+                    f"- Telemetri Jam {rag_ctx['hour']}: Getaran VI-3201 = {rag_ctx['vibration']:.2f} µm, Skor Deviasi GDN = {rag_ctx['anomaly_score']:.2f}, Health Index = {rag_ctx['health_index']:.1f}%\n"
+                    "- 8 Sensor P&ID Terpantau: VI-3201 (Getaran radial poros), TI-3201 (Temperatur babbitt bearing), FT-3201 (Laju alir gas 55 T/H), PT-3201 (Tekanan hisap 3.2 kg/cm²), PT-3202 (Tekanan keluar 18.2 kg/cm²), TI-3301 (Temperatur oli cooler), PI-3301 (Tekanan header pelumas 2.0 kg/cm²), FV-3201 (Katup anti-surge recycle)\n"
+                    "- Batas Getaran (API 670 / ISO 10816-3): Normal < 30.0 µm, Early Warning Jam 633 = 31.24 µm (Lead Time 16 Jam ke Alarm DCS 45 µm, 46 Jam ke Trip 75 µm)\n"
+                    "- Batas Temperatur: Oli pelumas normal 40.0-48.0°C (titik desain 42.5°C, alarm 55.0°C, trip 65.0°C); Bearing TI-3201 normal < 75°C (alarm 85°C, trip 100°C)\n"
+                    "- Spesifikasi Pelumas: Synthetic Turbine Oil ISO VG 46 (46 cSt @ 40°C), batas kontaminasi air < 500 ppm ASTM D6304\n"
+                    f"- Memori Insiden Historis ({rag_ctx['historical_incident']}): Kebocoran tube cooler HE-3301 mengkontaminasi pelumas, memicu babbitt bearing wipe-out, downtime {rag_ctx['historical_downtime_hrs']} jam, total kerugian riil ${rag_ctx['historical_loss_k_usd']:.1f}k USD ($1.584M)\n"
+                    "- Simulasi Solusi Terencana: Controlled shutdown 8 jam (hemat $1.188M USD; biaya henti 55 T/H x 8 jam x $900 = $396k)\n"
+                    "- Simulasi Pengurangan Beban 10%: Menurunkan beban dinamis ~18%, memperlambat degradasi bearing (+9.5 jam ke alarm 45 µm)\n\n"
+                    f"Pertanyaan Operator: \"{query_text}\"\n\n"
+                    "Jawab pertanyaan operator secara langsung, to the point, teknis, profesional, tanpa buzzword, berbasis data di atas (maksimal 100 kata)."
+                )
+
+                candidate_models = ["gemini-flash-lite-latest", "gemini-flash-latest"]
+                for model_name in candidate_models:
+                    try:
+                        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+                        payload = {
+                            "contents": [{"parts": [{"text": system_prompt}]}],
+                            "generationConfig": {"temperature": 0.1, "maxOutputTokens": 1000},
+                        }
+                        req = urllib.request.Request(
+                            url,
+                            data=json.dumps(payload).encode("utf-8"),
+                            headers={"Content-Type": "application/json"},
+                            method="POST",
+                        )
+                        with urllib.request.urlopen(req, timeout=6.0) as resp:
+                            data = json.loads(resp.read().decode("utf-8"))
+                            candidates = data.get("candidates", [])
+                            if candidates:
+                                cand = candidates[0]
+                                # If truncated by token limit, reject incomplete output and try next
+                                if cand.get("finishReason") == "MAX_TOKENS":
+                                    continue
+                                parts = cand.get("content", {}).get("parts", [])
+                                llm_text = "".join(p.get("text", "") for p in parts if "text" in p).strip()
+                                if llm_text and len(llm_text) >= 20:
+                                    clean_text = llm_text.strip()
+                                    online_res = {
+                                        "query": query_text,
+                                        "scenario_title": f"Respons Analisis: {query_text[:35]}...",
+                                        "answer": clean_text,
+                                        "source": "LIVE PROCESS COPILOT (Online Cloud Mode)",
+                                        "engine_status": "LIVE_ONLINE",
+                                    }
+                                    if hasattr(self, "_query_cache"):
+                                        self._query_cache[cache_key] = online_res
+                                    return online_res
+                    except Exception:
+                        continue
+            except Exception:
+                pass
+
+        # 3. Deterministic Ground-Truth Knowledge Fallback (0 ms)
         scenario_title = "Analisis Operasional Terpandu"
         answer = None
-        source = "Grounded Petrochemical Process Physics & RCA-2 Memory"
 
-        # Pattern A: Temperature / Lube Oil / Cooler Thermal Limits
         if any(k in q_lower for k in ["temperatur", "suhu", "panas", "temp", "thermal"]):
             scenario_title = "Batas Operasional Temperatur Oli Pendingin (HE-3301 & KO-3201)"
             answer = (
@@ -475,8 +600,6 @@ class ActionRecommender:
                 "• Rekomendasi Preskriptif: Periksa beda tekanan (dP) cooler HE-3301 dan lakukan oil sampling segera "
                 "untuk mengukur kadar kontaminasi air (batas kritis: < 500 ppm)."
             )
-
-        # Pattern B: Vibration Thresholds & Criteria
         elif any(k in q_lower for k in ["vibrasi", "getaran", "vib", "vi-3201", "ambang"]):
             scenario_title = "Ambang Batas Vibrasi & Kriteria Trip Kompresor KO-3201"
             answer = (
@@ -490,8 +613,6 @@ class ActionRecommender:
                 "(dan 46 jam sebelum trip katastropik 75 µm). Mengizinkan transisi dari henti darurat 32 jam "
                 "menjadi shutdown terkendali 8 jam, menghemat devisa $1.188M USD."
             )
-
-        # Pattern C: Heat Exchanger HE-3301 / Tube Leakage
         elif any(k in q_lower for k in ["cooler", "he-3301", "he3301", "bocor", "kebocoran", "tube bundle"]):
             scenario_title = "Integritas Mekanikal & Investigasi Cooler HE-3301"
             answer = (
@@ -505,8 +626,6 @@ class ActionRecommender:
                 "• Aksi Preskriptif: Buka drain valve sistem pelumas untuk uji emulsi visual, siapkan isolasi penukar "
                 "panas ke unit cadangan (standby cooler), dan jadwalkan plugging tube bundle saat controlled shutdown 8 jam."
             )
-
-        # Pattern D: Lubricant Viscosity & ISO VG 46
         elif any(k in q_lower for k in ["viskositas", "vg 46", "vg46", "pelumas", "viscosity"]):
             scenario_title = "Karakteristik & Spesifikasi Pelumas ISO VG 46"
             answer = (
@@ -519,8 +638,6 @@ class ActionRecommender:
                 "di bawah 32 cSt, dan memicu kavitasi mikro serta hilangnya daya pikul beban poros.\n"
                 "• Tindakan: Siapkan 200 liter oli pelumas baru (BoM SAP: LUB-SYN-VG46) untuk flushing total sistem saat turnaround."
             )
-
-        # Pattern E: Pressure & Compress Flow Thermodynamics
         elif any(k in q_lower for k in ["tekanan", "pressure", "hisap", "suction", "discharge", "pt-3201", "ft-3201"]):
             scenario_title = "Parameter Termodinamika & Tekanan Proses KO-3201"
             answer = (
@@ -533,8 +650,6 @@ class ActionRecommender:
                 "mengonfirmasi bahwa deviasi getaran radial 31.24 µm diakibatkan oleh degradasi mekanikal bantalan (bearing degradation), "
                 "bukan lonjakan proses hidraulik (process surging)."
             )
-
-        # Pattern F: Rate Reduction 10%
         elif any(k in q_lower for k in ["rate", "10%", "turunkan", "beban"]):
             scenario_title = "Simulasi Pengurangan Laju Beban 10%"
             answer = (
@@ -545,8 +660,6 @@ class ActionRecommender:
                 "• Rekomendasi Finansial: Segera jadwalkan controlled shutdown dalam 16 jam untuk menghemat downtime dari 32 jam "
                 "menjadi 8 jam (potensi penghematan devisa $1.188M USD)."
             )
-
-        # Pattern G: Babbitt Wipe-Out / Mechanical Damage Risk
         elif any(k in q_lower for k in ["wipe", "babbitt", "risiko", "catastrophic", "hancur", "rusak"]):
             scenario_title = "Analisis Risiko Kerusakan Babbitt Bearing"
             answer = (
@@ -556,8 +669,6 @@ class ActionRecommender:
                 "• Dampak Kerugian: Kerusakan menjalar ke rotor shaft journal, memaksa penggantian darurat dengan downtime 32 jam "
                 "dan kerugian finansial riil $1,584.0k USD (identik insiden AR-2026-ZCU-0142)."
             )
-
-        # Pattern H: Controlled Shutdown SOP / Turnaround Protocol
         elif any(k in q_lower for k in ["shutdown", "protokol", "sop", "prosedur", "turnaround"]):
             scenario_title = "Protokol Controlled Shutdown Terencana"
             answer = (
@@ -566,8 +677,6 @@ class ActionRecommender:
                 "2. Jam 2-6: Penggantian babbitt journal bearing sleeve insert, flushing total oli pelumas, dan plugging tube cooler HE-3301.\n"
                 "3. Jam 6-8: Uji sirkulasi pelumas, spin-up bertahap poros kompresor, sinkronisasi termal, dan ramp-up kembali ke kapasitas 55 T/H."
             )
-
-        # Pattern I: Financial Loss / Cost of Delay / Savings
         elif any(k in q_lower for k in ["hemat", "biaya", "uang", "cost", "loss", "finansial", "downtime", "rugi"]):
             scenario_title = "Evaluasi Finansial & Potensi Penghematan Dini"
             answer = (
@@ -581,51 +690,20 @@ class ActionRecommender:
                 "• Penghematan Devisa Bersih (Net Savings): $1,188.0k USD ($1.188 Juta devisa terselamatkan)\n"
                 "• Cost of Delay: Setiap penundaan melewati jendela 16 jam meningkatkan risiko eskalasi downtime ke 32 jam."
             )
+        elif any(k in q_lower for k in ["sensor", "p&id", "pid", "alat ini"]):
+            scenario_title = "Daftar 8 Sensor P&ID Terpantau (KO-3201 & HE-3301)"
+            answer = (
+                "Sensor Instrumentasi Terpantau (Plant ZCU P&ID Mimic Diagram):\n\n"
+                "1. VI-3201: Getaran Poros Radial (Normal < 30 µm, Alarm 45 µm, Trip 75 µm)\n"
+                "2. TI-3201: Temperatur Logam Bearing Babbitt DE (Normal < 75°C, Alarm 85°C, Trip 100°C)\n"
+                "3. FT-3201: Laju Alir Umpan Gas Retak (Desain 55.0 T/H)\n"
+                "4. PT-3201: Tekanan Suction Stage 1 (Desain 3.2 kg/cm²)\n"
+                "5. PT-3202: Tekanan Discharge Akhir (Desain 18.2 kg/cm²)\n"
+                "6. TI-3301: Temperatur Pasokan Oli Lube Ex-Cooler (Normal 40-48°C, Alarm 55°C, Trip 65°C)\n"
+                "7. PI-3301: Tekanan Header Pasokan Oli Pelumas (Normal 2.0 kg/cm², Low Alarm 1.5 kg/cm²)\n"
+                "8. FV-3201: Katup Anti-Surge Recycle Gas (0% Tertutup Saat Normal)"
+            )
 
-        # Pattern J: If no specific pattern matched, attempt Gemini LLM if key is available
-        if answer is None and use_llm and api_key and api_key.startswith("AIzaSy"):
-            try:
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
-                prompt = (
-                    f"Bertindaklah sebagai Operational Plant Copilot berbasis fisika proses untuk Chandra Asri Petrochemical (Plant ZCU).\n"
-                    f"Pertanyaan operator: \"{query_text}\"\n\n"
-                    f"Konteks Fakta & Rekayasa Proses:\n"
-                    f"- Aset: Kompresor KO-3201 & Lube Oil Cooler HE-3301\n"
-                    f"- Batas Temperatur Oli Pelumas: Normal 40.0-48.0°C (Desain 42.5°C), High Alarm 55.0°C, Trip 65.0°C\n"
-                    f"- Batas Temperatur Bearing Metal (TI-3201 API 670): Normal <75°C, Alarm 85°C, Trip 100°C\n"
-                    f"- Batas Vibrasi (VI-3201 ISO 10816-3): Normal <30 µm, Early Warning Jam 633 = 31.24 µm (Lead Time 16 Jam ke Alarm 45 µm, 46 Jam ke Trip 75 µm)\n"
-                    f"- Pelumas: Synthetic Turbine Oil ISO VG 46 (46 cSt @ 40°C), batasan kontaminasi air < 500 ppm\n"
-                    f"- Tekanan & Flow: Suction PT-3201 3.2 kg/cm², Discharge 18.2 kg/cm², Flow 55 T/H\n"
-                    f"- Insiden Nyata AR-2026-ZCU-0142: Kebocoran tube cooler HE-3301 mengkontaminasi pelumas, menyebabkan bearing wipe, downtime 32 jam, loss $1,584.0k USD.\n"
-                    f"- Solusi Dini: Controlled shutdown 8 jam (hemat $1.188M USD).\n\n"
-                    f"Jawab pertanyaan operator secara langsung, to the point, teknis, profesional, tanpa buzzword, berbasis data di atas (maksimal 90 kata)."
-                )
-                payload = {
-                    "contents": [{"parts": [{"text": prompt}]}],
-                    "generationConfig": {"temperature": 0.1, "maxOutputTokens": 180},
-                }
-                req = urllib.request.Request(
-                    url,
-                    data=json.dumps(payload).encode("utf-8"),
-                    headers={"Content-Type": "application/json"},
-                    method="POST",
-                )
-                with urllib.request.urlopen(req, timeout=2.5) as resp:
-                    data = json.loads(resp.read().decode("utf-8"))
-                    candidates = data.get("candidates", [])
-                    if candidates:
-                        llm_text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-                        if llm_text.strip():
-                            return {
-                                "query": query_text,
-                                "scenario_title": f"Respons Cerdas Copilot: {query_text[:35]}...",
-                                "answer": llm_text.strip(),
-                                "source": "LLM Copilot (Gemini 1.5 Flash grounded on ZCU ChemE KB & RCA Memory)",
-                            }
-            except Exception:
-                pass
-
-        # If answer is still None (no specific match and LLM didn't return), return comprehensive operational context
         if answer is None:
             scenario_title = "Analisis Operasional Terpandu"
             answer = (
@@ -637,12 +715,16 @@ class ActionRecommender:
                 f"turnaround terkendali 8 jam guna menghemat devisa $1.188M USD."
             )
 
-        return {
+        fallback_result = {
             "query": query_text,
             "scenario_title": scenario_title,
             "answer": answer,
-            "source": source,
+            "source": "DETERMINISTIC RULE ENGINE (0 ms Offline Fallback)",
+            "engine_status": "OFFLINE_FALLBACK",
         }
+        if hasattr(self, "_query_cache"):
+            self._query_cache[cache_key] = fallback_result
+        return fallback_result
 
     def generate_sap_work_order(
         self,
