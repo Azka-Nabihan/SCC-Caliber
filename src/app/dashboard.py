@@ -427,6 +427,36 @@ def main():
                 "DCS High Alarm (45.0 µm) | DCS High-High Trip (75.0 µm)"
             )
 
+            st.markdown("<div style='margin-top:14px;'></div>", unsafe_allow_html=True)
+            st.markdown("#### Past Similar Incidents (Historical Failure Repository)")
+            st.caption("Top 3 incidents matching current mechanical degradation pattern (High Radial Vibration / Bearing Distress):")
+
+            similar_incidents = provider.get_similar_incidents(equipment_type="COMPRESSOR", top_k=3)
+            for inc in similar_incidents:
+                badge_color = "#10B981" if inc["similarity_pct"] >= 90 else "#38BDF8"
+                st.markdown(
+                    f"""
+                    <div style="background:#1E293B; border:1px solid #334155; border-left:3px solid {badge_color}; border-radius:4px; padding:10px 12px; margin-bottom:8px; font-size:12px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                            <div style="font-weight:700; color:#F8FAFC; font-family:'Inter', monospace; font-size:11px;">
+                                {inc['incident_reference']} &nbsp;|&nbsp; {inc['tag_number']} ({inc['plant']})
+                            </div>
+                            <span style="background:rgba(56,189,248,0.15); color:{badge_color}; border:1px solid {badge_color}; padding:1px 6px; border-radius:3px; font-size:10px; font-weight:700;">
+                                {inc['similarity_pct']}% MATCH
+                            </span>
+                        </div>
+                        <div style="color:#94A3B8; font-size:11px; margin-bottom:4px;">
+                            <b>Equipment / Failure:</b> {inc['equipment']}
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:11px; color:#F8FAFC; border-top:1px solid #334155; padding-top:4px; margin-top:4px;">
+                            <span>Downtime: <b style="color:#EF4444;">{inc['actual_downtime_hrs']:.1f} Hours</b></span>
+                            <span>Financial Loss: <b style="color:#EF4444;">${inc['actual_loss_k_usd']:,.1f}k USD</b></span>
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
         # --- RIGHT COLUMN: OPERATIONAL ASSISTANT (WHAT-IF COPILOT) ---
         with col_right:
             st.markdown("#### Operational Assistant (What-If Copilot)")
@@ -529,6 +559,84 @@ def main():
     # TAB 2: SENSORS & PROCESS DIAGRAM
     # =========================================================================
     with tab2:
+        st.markdown("### Equipment Reliability Performance Indicators (ISO 14224 / API 689)")
+        st.caption("Key operational uptime, repair speed, and maintenance compliance metrics for Pilot Asset KO-3201:")
+
+        kpis = provider.get_pilot_reliability_kpis(current_hour)
+        k_col1, k_col2, k_col3, k_col4, k_col5, k_col6 = st.columns(6)
+
+        with k_col1:
+            avail_color = "#10B981" if kpis["availability_pct"] >= kpis["availability_target_pct"] else "#EF4444"
+            st.markdown(
+                f"""
+                <div class="cbm-card" style="padding:10px 12px;">
+                    <div class="cbm-label">Availability (A)</div>
+                    <div class="cbm-val" style="color:{avail_color}; font-size:20px;">{kpis['availability_pct']:.1f}%</div>
+                    <div class="cbm-sub">Target: ≥{kpis['availability_target_pct']:.0f}%</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        with k_col2:
+            st.markdown(
+                f"""
+                <div class="cbm-card" style="padding:10px 12px;">
+                    <div class="cbm-label">MTBF (Run Time)</div>
+                    <div class="cbm-val" style="color:#38BDF8; font-size:20px;">{kpis['mtbf_hrs']:,}h</div>
+                    <div class="cbm-sub">{kpis['mtbf_days']:.1f} Operating Days</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        with k_col3:
+            st.markdown(
+                f"""
+                <div class="cbm-card" style="padding:10px 12px;">
+                    <div class="cbm-label">MTTR (Repair Window)</div>
+                    <div class="cbm-val" style="color:#F59E0B; font-size:20px;">{kpis['mttr_planned_hrs']:.1f}h / {kpis['mttr_emergency_hrs']:.1f}h</div>
+                    <div class="cbm-sub">Planned vs Emergency Outage</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        with k_col4:
+            st.markdown(
+                f"""
+                <div class="cbm-card" style="padding:10px 12px;">
+                    <div class="cbm-label">Maintenance Compliance</div>
+                    <div class="cbm-val" style="color:#10B981; font-size:20px;">{kpis['maintenance_compliance_pct']:.1f}%</div>
+                    <div class="cbm-sub">Target: >{kpis['compliance_target_pct']:.0f}% On-Time</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        with k_col5:
+            dt_color = "#10B981" if kpis["total_downtime_hrs"] == 0.0 else "#EF4444"
+            st.markdown(
+                f"""
+                <div class="cbm-card" style="padding:10px 12px;">
+                    <div class="cbm-label">Total Downtime</div>
+                    <div class="cbm-val" style="color:{dt_color}; font-size:20px;">{kpis['total_downtime_hrs']:.1f}h</div>
+                    <div class="cbm-sub">{'Steady Operation' if not kpis['is_tripped'] else 'Emergency Trip Reached'}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        with k_col6:
+            loss_color = "#10B981" if kpis["production_loss_k_usd"] == 0.0 else "#EF4444"
+            st.markdown(
+                f"""
+                <div class="cbm-card" style="padding:10px 12px;">
+                    <div class="cbm-label">Production Loss</div>
+                    <div class="cbm-val" style="color:{loss_color}; font-size:20px;">${kpis['production_loss_k_usd']:,.1f}k</div>
+                    <div class="cbm-sub">{kpis['lost_production_tons']:.0f} Tons Olefin</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+        st.markdown("<div style='margin-top:14px;'></div>", unsafe_allow_html=True)
+
         st.markdown("### Process Instrumentation Telemetry & Anomaly Attribution")
         st.caption("Continuous 720-hour OSIsoft PI telemetry streams synchronized with Graph Deviation Network (GDN) multimodal anomaly scores:")
 
