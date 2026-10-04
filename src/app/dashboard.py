@@ -173,7 +173,6 @@ def main():
     df = provider.load_timeseries_data()
 
     # --- SIDEBAR CONTROLLER ---
-    st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/4/4e/Chandra_Asri_Petrochemical_logo.png", width=180) if False else None
     st.sidebar.markdown("### 🎛️ Operator Control Console")
 
     # Pilot Asset Selector (Solution C5: locked MVP)
@@ -190,29 +189,31 @@ def main():
     c_bm1, c_bm2 = st.sidebar.columns(2)
     c_bm3, c_bm4 = st.sidebar.columns(2)
 
-    # Initialize current hour in session state
-    if "selected_hour" not in st.session_state:
-        st.session_state.selected_hour = 633
+    # Initialize timeline_slider in session state
+    if "timeline_slider" not in st.session_state:
+        st.session_state.timeline_slider = 633
 
     if c_bm1.button("Hr 100: Normal", use_container_width=True, help="Baseline steady-state operation"):
-        st.session_state.selected_hour = 100
+        st.session_state.timeline_slider = 100
+        st.rerun()
     if c_bm2.button("Hr 633: GDN Alert", use_container_width=True, help="AI Early Warning: 16h before DCS alarm"):
-        st.session_state.selected_hour = 633
+        st.session_state.timeline_slider = 633
+        st.rerun()
     if c_bm3.button("Hr 649: DCS Alarm", use_container_width=True, help="Conventional 45 um threshold reached"):
-        st.session_state.selected_hour = 649
+        st.session_state.timeline_slider = 649
+        st.rerun()
     if c_bm4.button("Hr 679: Trip Post", use_container_width=True, help="Actual machine trip (RUN_STATUS=0)"):
-        st.session_state.selected_hour = 679
+        st.session_state.timeline_slider = 679
+        st.rerun()
 
     # Timeline Interactive Slider (Solution L2: 0..719)
     current_hour = st.sidebar.slider(
         "Operational Timeline (Hours)",
         min_value=0,
         max_value=719,
-        value=int(st.session_state.selected_hour),
         key="timeline_slider",
         help="Simulate chronological time travel from Hour 0 to Hour 719.",
     )
-    st.session_state.selected_hour = current_hour
 
     # Retrieve real-time snapshot
     snap = provider.get_hour_snapshot(current_hour)
