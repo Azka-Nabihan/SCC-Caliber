@@ -256,8 +256,6 @@ def main():
     st.sidebar.markdown(f"**Vibration:** `{snap['vibration']:.2f} µm` (Alarm: 45 µm | Trip: 75 µm)")
     st.sidebar.markdown(f"**Health Index:** `{snap['health_index']:.1f}%` (ISO 10816-3)")
 
-    st.sidebar.caption("Deterministic Inference Engine: <2 ms lookup")
-
     # Render Main Header
     render_header()
 
