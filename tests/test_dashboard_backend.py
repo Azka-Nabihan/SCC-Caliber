@@ -277,6 +277,24 @@ def test_copilot_what_if_simulation(data_provider):
     res_sop = data_provider.run_copilot_simulation("Protokol shutdown 8 jam", current_hour=633)
     assert "8.0 Jam" in res_sop["answer"] or "8 jam" in res_sop["answer"].lower()
 
+    # 4. Temperature query (exact user query: "berapa batas temperatur aman oli pendingin?")
+    res_temp = data_provider.run_copilot_simulation("berapa batas temperatur aman oli pendingin?", current_hour=633)
+    assert "40.0°C – 48.0°C" in res_temp["answer"] or "42.5°C" in res_temp["answer"]
+    assert "55.0°C" in res_temp["answer"]
+    assert "65.0°C" in res_temp["answer"]
+    assert "HE-3301" in res_temp["scenario_title"]
+
+    # 5. Vibration thresholds query
+    res_vib = data_provider.run_copilot_simulation("Berapa ambang batas vibrasi kompresor KO-3201?", current_hour=633)
+    assert "45.0 µm" in res_vib["answer"]
+    assert "75.0 µm" in res_vib["answer"]
+    assert "31.24 µm" in res_vib["answer"]
+
+    # 6. Cooler HE-3301 leakage query
+    res_cooler = data_provider.run_copilot_simulation("Apakah ada kebocoran pada cooler HE-3301?", current_hour=633)
+    assert "AR-2026-ZCU-0142" in res_cooler["answer"]
+    assert "500 ppm" in res_cooler["answer"]
+
 
 def test_sap_work_order_generation(data_provider):
     """

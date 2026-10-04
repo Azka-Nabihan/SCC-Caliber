@@ -313,7 +313,7 @@ class ActionRecommender:
                 f"Segera verifikasi kondisi lapangan dan tindak lanjuti SOP preskriptif terkait."
             )
 
-        api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+        api_key = self._get_gemini_api_key()
 
         if not use_llm or not api_key:
             return fallback_text, "DETERMINISTIC_EXECUTIVE_BRIEFING (Zero-Latency Process Rules / DETERMINISTIC_TEMPLATE_0MS)"
@@ -401,6 +401,28 @@ class ActionRecommender:
             "synthesis_mode": "AUTONOMOUS_DIAGNOSTIC_REASONING_ENGINE",
         }
 
+    @staticmethod
+    def _get_gemini_api_key() -> Optional[str]:
+        key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+        if key and key.strip():
+            return key.strip()
+        env_file = Path(__file__).resolve().parents[2] / ".env"
+        if env_file.exists():
+            try:
+                for line in env_file.read_text(encoding="utf-8").splitlines():
+                    line = line.strip()
+                    if line.startswith("GEMINI_API_KEY="):
+                        val = line.split("=", 1)[1].strip().strip('"').strip("'")
+                        if val:
+                            return val
+                    elif line.startswith("GOOGLE_API_KEY="):
+                        val = line.split("=", 1)[1].strip().strip('"').strip("'")
+                        if val:
+                            return val
+            except Exception:
+                pass
+        return None
+
     def query_copilot_simulation(
         self,
         query_text: str,
@@ -410,9 +432,96 @@ class ActionRecommender:
     ) -> Dict[str, Any]:
         """
         Evaluates operational What-If questions and physics scenarios with grounded reasoning.
+        Provides rich, deterministic chemical engineering knowledge with instant 0 ms fallback,
+        supplemented by Gemini LLM reasoning when API key is configured.
         """
         q_lower = query_text.lower()
-        if "rate" in q_lower or "10%" in q_lower or "turunkan" in q_lower:
+        api_key = self._get_gemini_api_key()
+
+        scenario_title = "Analisis Operasional Terpandu"
+        answer = None
+        source = "Grounded Petrochemical Process Physics & RCA-2 Memory"
+
+        # Pattern A: Temperature / Lube Oil / Cooler Thermal Limits
+        if any(k in q_lower for k in ["temperatur", "suhu", "panas", "temp", "thermal"]):
+            scenario_title = "Batas Operasional Temperatur Oli Pendingin (HE-3301 & KO-3201)"
+            answer = (
+                "Batas Keamanan Temperatur Oli Pendingin & Bantalan Babbitt (Desain Rekayasa Proses):\n\n"
+                "• Pasokan Oli Pelumas (Lube Oil Supply Temp ke Bantalan):\n"
+                "  - Rentang Operasi Normal: 40.0°C – 48.0°C (Titik Desain: 42.5°C)\n"
+                "  - DCS High Alarm: 55.0°C (Indikasi penurunan kapasitas pendinginan cooler HE-3301)\n"
+                "  - DCS High-High Trip: 65.0°C (Proteksi hilangnya viskositas pelumas)\n\n"
+                "• Temperatur Logam Babbitt Bearing (TI-3201 - Standar API 670 / ISO 10816-3):\n"
+                "  - Normal: < 75.0°C | High Alarm: 85.0°C | High-High Trip: 100.0°C\n\n"
+                "• Dampak Termodinamika & Fisika Proses:\n"
+                "  Jika temperatur oli pelumas melampaui 55.0°C, viskositas pelumas ISO VG 46 turun drastis di bawah "
+                "32 cSt. Ketebalan lapisan pelindung hidrodinamik (hydrodynamic oil film) menipis drastis, memicu "
+                "gesekan metal-to-metal pada sleeve bantalan babbitt kompresor KO-3201.\n\n"
+                "• Rekomendasi Preskriptif: Periksa beda tekanan (dP) cooler HE-3301 dan lakukan oil sampling segera "
+                "untuk mengukur kadar kontaminasi air (batas kritis: < 500 ppm)."
+            )
+
+        # Pattern B: Vibration Thresholds & Criteria
+        elif any(k in q_lower for k in ["vibrasi", "getaran", "vib", "vi-3201", "ambang"]):
+            scenario_title = "Ambang Batas Vibrasi & Kriteria Trip Kompresor KO-3201"
+            answer = (
+                "Ambang Batas Getaran Poros Radial VI-3201 (Standar API 670 & ISO 10816-3 Class IV):\n\n"
+                "• Operasi Normal (Baseline): < 30.0 µm pk-pk (Getaran stabil steady-state)\n"
+                "• Early Warning (GDN Detection Jam 633): 31.24 µm (Skor deviasi GDN 10.72 > τ=3.11, Lead Time 16 Jam)\n"
+                "• DCS High Alarm: 45.0 µm (Ambang aktivasi alarm ruang kendali DCS pada Jam 649)\n"
+                "• DCS High-High Trip: 75.0 µm (Kondisi trip otomatis darurat kompresor pada Jam 679)\n\n"
+                "• Nilai Lead Time Peringatan Dini:\n"
+                "Deteksi dini pada Jam 633 memberikan jendela intervensi 16 jam sebelum alarm DCS 45 µm "
+                "(dan 46 jam sebelum trip katastropik 75 µm). Mengizinkan transisi dari henti darurat 32 jam "
+                "menjadi shutdown terkendali 8 jam, menghemat devisa $1.188M USD."
+            )
+
+        # Pattern C: Heat Exchanger HE-3301 / Tube Leakage
+        elif any(k in q_lower for k in ["cooler", "he-3301", "he3301", "bocor", "kebocoran", "tube bundle"]):
+            scenario_title = "Integritas Mekanikal & Investigasi Cooler HE-3301"
+            answer = (
+                "Investigasi Akar Masalah Cooler HE-3301 (Berdasarkan RCA Investigasi AR-2026-ZCU-0142):\n\n"
+                "• Fungsi Peralatan: Shell-and-tube heat exchanger pendingin oli pelumas kompresor KO-3201 "
+                "menggunakan media pendingin Cooling Water (CW).\n"
+                "• Mekanisme Kerusakan: Terjadi pinhole leak akibat korosi erosi lokal pada sisi tube HE-3301, "
+                "yang menyebabkan air pendingin (CW) menyusup masuk ke sirkulasi oli pelumas bertekanan.\n"
+                "• Batas Toleransi Kontaminasi Air: Maksimum 500 ppm (Metode Karl Fischer ASTM D6304). "
+                "Kadar air > 1000 ppm merusak emulsi oli dan menghancurkan daya dukung film pelumas hidrodinamik.\n"
+                "• Aksi Preskriptif: Buka drain valve sistem pelumas untuk uji emulsi visual, siapkan isolasi penukar "
+                "panas ke unit cadangan (standby cooler), dan jadwalkan plugging tube bundle saat controlled shutdown 8 jam."
+            )
+
+        # Pattern D: Lubricant Viscosity & ISO VG 46
+        elif any(k in q_lower for k in ["viskositas", "vg 46", "vg46", "pelumas", "viscosity"]):
+            scenario_title = "Karakteristik & Spesifikasi Pelumas ISO VG 46"
+            answer = (
+                "Spesifikasi & Standar Pelumas Kompresor KO-3201:\n\n"
+                "• Tipe Pelumas Desain: Synthetic Turbine Lubricant ISO VG 46\n"
+                "  - Viskositas Kinematik @ 40°C: 46.0 cSt (Batas toleransi operasi: 41.4 – 50.6 cSt / ±10%)\n"
+                "  - Viskositas Kinematik @ 100°C: 6.8 cSt\n"
+                "  - Total Acid Number (TAN): Maksimum 0.20 mg KOH/g\n"
+                "• Dampak Kontaminasi Air dari HE-3301: Menyebabkan emulsifikasi minyak-air, menurunkan viskositas efektif "
+                "di bawah 32 cSt, dan memicu kavitasi mikro serta hilangnya daya pikul beban poros.\n"
+                "• Tindakan: Siapkan 200 liter oli pelumas baru (BoM SAP: LUB-SYN-VG46) untuk flushing total sistem saat turnaround."
+            )
+
+        # Pattern E: Pressure & Compress Flow Thermodynamics
+        elif any(k in q_lower for k in ["tekanan", "pressure", "hisap", "suction", "discharge", "pt-3201", "ft-3201"]):
+            scenario_title = "Parameter Termodinamika & Tekanan Proses KO-3201"
+            answer = (
+                "Parameter Operasi Desain Cracking Gas Compressor KO-3201:\n\n"
+                "• Tekanan Suction (PT-3201): Desain 3.2 kg/cm² (Batas Alarm Low: 2.8 kg/cm², Trip Low: 2.5 kg/cm²)\n"
+                "• Tekanan Discharge (PT-3202): Desain 18.2 kg/cm² (Batas Alarm High: 19.5 kg/cm², Trip High: 20.5 kg/cm²)\n"
+                "• Laju Alir Gas Retak (FT-3201): Desain 55.0 T/H (Rentang normal: 52.0 – 56.5 T/H)\n"
+                "• Tekanan Header Pelumas (Lube Oil Header): Normal 2.0 kg/cm², Low Alarm 1.5 kg/cm², Low-Low Trip 1.2 kg/cm²\n\n"
+                "• Korelasi Telemetri Jam 633: Parameter tekanan dan laju alir gas berada dalam rentang normal stabil, "
+                "mengonfirmasi bahwa deviasi getaran radial 31.24 µm diakibatkan oleh degradasi mekanikal bantalan (bearing degradation), "
+                "bukan lonjakan proses hidraulik (process surging)."
+            )
+
+        # Pattern F: Rate Reduction 10%
+        elif any(k in q_lower for k in ["rate", "10%", "turunkan", "beban"]):
+            scenario_title = "Simulasi Pengurangan Laju Beban 10%"
             answer = (
                 "Simulasi Pengurangan Laju Alir (Rate Reduction 10% dari 55.0 T/H ke 49.5 T/H):\n\n"
                 "• Dampak Fisika: Menurunkan beban dinamis radial poros sebesar ~18%, memperlambat degradasi bearing "
@@ -421,8 +530,10 @@ class ActionRecommender:
                 "• Rekomendasi Finansial: Segera jadwalkan controlled shutdown dalam 16 jam untuk menghemat downtime dari 32 jam "
                 "menjadi 8 jam (potensi penghematan devisa $1.188M USD)."
             )
-            scenario_title = "Simulasi Pengurangan Laju Beban 10%"
-        elif "wipe" in q_lower or "babbitt" in q_lower or "risiko" in q_lower or "catastrophic" in q_lower:
+
+        # Pattern G: Babbitt Wipe-Out / Mechanical Damage Risk
+        elif any(k in q_lower for k in ["wipe", "babbitt", "risiko", "catastrophic", "hancur", "rusak"]):
+            scenario_title = "Analisis Risiko Kerusakan Babbitt Bearing"
             answer = (
                 "Analisis Risiko Kerusakan Babbitt Bearing (Unmitigated Run):\n\n"
                 "• Jika operasi dipaksakan melewati Jam 649 (DCS Alarm 45 µm), film oli pelindung akan pecah total.\n"
@@ -430,29 +541,92 @@ class ActionRecommender:
                 "• Dampak Kerugian: Kerusakan menjalar ke rotor shaft journal, memaksa penggantian darurat dengan downtime 32 jam "
                 "dan kerugian finansial riil $1,584.0k USD (identik insiden AR-2026-ZCU-0142)."
             )
-            scenario_title = "Analisis Risiko Kerusakan Babbitt Bearing"
-        elif "shutdown" in q_lower or "protokol" in q_lower or "sop" in q_lower or "prosedur" in q_lower:
+
+        # Pattern H: Controlled Shutdown SOP / Turnaround Protocol
+        elif any(k in q_lower for k in ["shutdown", "protokol", "sop", "prosedur", "turnaround"]):
+            scenario_title = "Protokol Controlled Shutdown Terencana"
             answer = (
                 "Urutan Protokol Controlled Shutdown Terencana (Durasi Total: 8.0 Jam):\n\n"
                 "1. Jam 0-2: Ramp-down laju furnace cracking secara bertahap, isolasi train kompresi KO-3201, dan siklus pendinginan poros.\n"
                 "2. Jam 2-6: Penggantian babbitt journal bearing sleeve insert, flushing total oli pelumas, dan plugging tube cooler HE-3301.\n"
                 "3. Jam 6-8: Uji sirkulasi pelumas, spin-up bertahap poros kompresor, sinkronisasi termal, dan ramp-up kembali ke kapasitas 55 T/H."
             )
-            scenario_title = "Protokol Controlled Shutdown Terencana"
-        else:
+
+        # Pattern I: Financial Loss / Cost of Delay / Savings
+        elif any(k in q_lower for k in ["hemat", "biaya", "uang", "cost", "loss", "finansial", "downtime", "rugi"]):
+            scenario_title = "Evaluasi Finansial & Potensi Penghematan Dini"
+            answer = (
+                "Evaluasi Finansial & Analisis Kerugian Operasional (Dual-Metric Approach):\n\n"
+                "• Uncontrolled Emergency Trip (Baseline Kasus Nyata AR-2026-ZCU-0142):\n"
+                "  - Durasi Henti Pabrik: 32.0 Jam downtime total\n"
+                "  - Total Kerugian Finansial Riil: $1,584.0k USD ($1.584 Juta)\n\n"
+                "• Controlled Turnaround Terencana (Intervensi Dini Jam 633):\n"
+                "  - Durasi Downtime Terjadwal: 8.0 Jam\n"
+                "  - Biaya Opportunity Loss (55 T/H x 8 jam x $900/ton): $396.0k USD\n\n"
+                "• Penghematan Devisa Bersih (Net Savings): $1,188.0k USD ($1.188 Juta devisa terselamatkan)\n"
+                "• Cost of Delay: Setiap penundaan melewati jendela 16 jam meningkatkan risiko eskalasi downtime ke 32 jam."
+            )
+
+        # Pattern J: If no specific pattern matched, attempt Gemini LLM if key is available
+        if answer is None and use_llm and api_key and api_key.startswith("AIzaSy"):
+            try:
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+                prompt = (
+                    f"Bertindaklah sebagai Operational Plant Copilot berbasis fisika proses untuk Chandra Asri Petrochemical (Plant ZCU).\n"
+                    f"Pertanyaan operator: \"{query_text}\"\n\n"
+                    f"Konteks Fakta & Rekayasa Proses:\n"
+                    f"- Aset: Kompresor KO-3201 & Lube Oil Cooler HE-3301\n"
+                    f"- Batas Temperatur Oli Pelumas: Normal 40.0-48.0°C (Desain 42.5°C), High Alarm 55.0°C, Trip 65.0°C\n"
+                    f"- Batas Temperatur Bearing Metal (TI-3201 API 670): Normal <75°C, Alarm 85°C, Trip 100°C\n"
+                    f"- Batas Vibrasi (VI-3201 ISO 10816-3): Normal <30 µm, Early Warning Jam 633 = 31.24 µm (Lead Time 16 Jam ke Alarm 45 µm, 46 Jam ke Trip 75 µm)\n"
+                    f"- Pelumas: Synthetic Turbine Oil ISO VG 46 (46 cSt @ 40°C), batasan kontaminasi air < 500 ppm\n"
+                    f"- Tekanan & Flow: Suction PT-3201 3.2 kg/cm², Discharge 18.2 kg/cm², Flow 55 T/H\n"
+                    f"- Insiden Nyata AR-2026-ZCU-0142: Kebocoran tube cooler HE-3301 mengkontaminasi pelumas, menyebabkan bearing wipe, downtime 32 jam, loss $1,584.0k USD.\n"
+                    f"- Solusi Dini: Controlled shutdown 8 jam (hemat $1.188M USD).\n\n"
+                    f"Jawab pertanyaan operator secara langsung, to the point, teknis, profesional, tanpa buzzword, berbasis data di atas (maksimal 90 kata)."
+                )
+                payload = {
+                    "contents": [{"parts": [{"text": prompt}]}],
+                    "generationConfig": {"temperature": 0.1, "maxOutputTokens": 180},
+                }
+                req = urllib.request.Request(
+                    url,
+                    data=json.dumps(payload).encode("utf-8"),
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                )
+                with urllib.request.urlopen(req, timeout=2.5) as resp:
+                    data = json.loads(resp.read().decode("utf-8"))
+                    candidates = data.get("candidates", [])
+                    if candidates:
+                        llm_text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                        if llm_text.strip():
+                            return {
+                                "query": query_text,
+                                "scenario_title": f"Respons Cerdas Copilot: {query_text[:35]}...",
+                                "answer": llm_text.strip(),
+                                "source": "LLM Copilot (Gemini 1.5 Flash grounded on ZCU ChemE KB & RCA Memory)",
+                            }
+            except Exception:
+                pass
+
+        # If answer is still None (no specific match and LLM didn't return), return comprehensive operational context
+        if answer is None:
+            scenario_title = "Analisis Operasional Terpandu"
             answer = (
                 f"Analisis Copilot untuk '{query_text}':\n\n"
                 f"Kondisi kompresor KO-3201 pada jam berjalan berada dalam status Early Warning (skor GDN 10.72). "
-                f"Sistem pelumasan menunjukkan anomali terisolasi akibat cooler HE-3301. Segera persiapkan suku cadang "
-                f"babbitt bearing insert dan oli ISO VG 46 untuk pelaksanaan turnaround terkendali 8 jam."
+                f"Parameter getaran radial VI-3201 tercatat 31.24 µm (Lead time 16 jam mendahului batas alarm DCS 45 µm). "
+                f"Sistem pelumasan menunjukkan anomali terisolasi akibat kebocoran tube cooler HE-3301. "
+                f"Segera persiapkan suku cadang babbitt bearing insert (BBR-3201-DE) dan oli ISO VG 46 untuk pelaksanaan "
+                f"turnaround terkendali 8 jam guna menghemat devisa $1.188M USD."
             )
-            scenario_title = "Analisis Operasional Terpandu"
 
         return {
             "query": query_text,
             "scenario_title": scenario_title,
             "answer": answer,
-            "source": "Grounded Petrochemical Process Physics & RCA-2 Memory",
+            "source": source,
         }
 
     def generate_sap_work_order(
