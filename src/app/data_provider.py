@@ -496,3 +496,107 @@ class DashboardDataProvider:
             },
         ]
 
+    def get_work_orders_tracker_catalog(self) -> List[Dict[str, Any]]:
+        """
+        Returns the 3 prioritized maintenance work orders for the condition-based
+        action lifecycle tracker in Tab 3 (Solution Stage 4, C1-C3).
+        """
+        return [
+            {
+                "order_id": "WO-8842109",
+                "title": "Babbitt Bearing Replacement & Lube Flushing",
+                "equipment_tag": "KO-3201",
+                "equipment_name": "Cracked Gas Compressor (Stage 1-4)",
+                "category": "URGENT REPAIR",
+                "order_type": "PM01 (Corrective Maintenance)",
+                "priority": "P1 - High / Urgent",
+                "priority_color": "#EF4444",
+                "default_step": 1,  # 0: Open, 1: Dispatched, 2: In Progress, 3: Completed & Verified
+                "target_duration_hrs": 8.0,
+                "required_window": "16 Hours (Before DCS Alarm 45 µm)",
+                "assigned_crew": "STA-02 (Rotating Equipment Specialist)",
+                "work_center": "MECH-REL-01",
+                "safety_permit": "PTW-HC-TIER1 (Hot Work & Hydrocarbon Isolation Permit Approved)",
+                "risk_before": "High Risk (GDN Anomaly 10.72 / Vibration 31.24 µm)",
+                "risk_after": "Safe Nominal (< 30.0 µm ISO 10816-3 Zone A)",
+                "avoided_loss_k_usd": 1188.0,
+                "avoided_downtime_hrs": 24.0,
+                "financial_basis": "Avoided Unplanned Trip (32h @ $1,584.0k) vs Controlled Turnaround (8h @ $396.0k)",
+                "source": "RCA-2 / AR-2026-ZCU-0142 Investigation",
+                "bill_of_materials": [
+                    {"part_no": "BBR-3201-DE", "description": "Babbitt Journal Bearing Insert Sleeve Set", "qty": 1, "unit": "SET"},
+                    {"part_no": "LUB-SYN-VG46", "description": "Synthetic Turbine Lubricant ISO VG 46", "qty": 200, "unit": "LTR"},
+                    {"part_no": "GSK-HE3301", "description": "HE-3301 Cooler Channel Gasket Kit", "qty": 1, "unit": "KIT"},
+                ],
+                "action_steps": [
+                    {"step": 1, "action": "Ramp furnace cracking load down by 10% (to 49.5 T/H) to extend babbitt bearing life window (+9.5h).", "timeframe": "< 30 min", "source": "Process Engineering SOP"},
+                    {"step": 2, "action": "Prepare standby cooler bundle HE-3301 and stage replacement babbitt sleeve in satellite warehouse.", "timeframe": "< 2 hours", "source": "SAP PM Inventory"},
+                    {"step": 3, "action": "Execute controlled 8h turnaround shutdown before vibration exceeds DCS Alarm limit (45 µm).", "timeframe": "16h Window", "source": "RCA-2 Turnaround Protocol"},
+                ],
+            },
+            {
+                "order_id": "WO-8842110",
+                "title": "High-Pressure Tube Bundle Hydro-Jet Cleaning",
+                "equipment_tag": "HE-3301",
+                "equipment_name": "Lube Oil Cooler Heat Exchanger",
+                "category": "PLANNED SERVICE",
+                "order_type": "PM03 (Preventive Maintenance)",
+                "priority": "P2 - Medium Priority",
+                "priority_color": "#F59E0B",
+                "default_step": 0,
+                "target_duration_hrs": 4.0,
+                "required_window": "Next Available Shift Window",
+                "assigned_crew": "STA-04 (Static Heat Exchanger Specialist)",
+                "work_center": "MECH-OPS-02",
+                "safety_permit": "PTW-MED-TIER2 (High-Pressure Water Jetting Permit Approved)",
+                "risk_before": "Medium Risk (Cooler dP > 0.6 bar / Fouling Excursion)",
+                "risk_after": "Normal Baseline (Cooler dP < 0.2 bar Clean Bundle)",
+                "avoided_loss_k_usd": 350.0,
+                "avoided_downtime_hrs": 8.0,
+                "financial_basis": "Prevents Thermal Degradation of Lube Oil & Secondary Babbitt Overheating",
+                "source": "FMEA Reliability Standard / RCA-4",
+                "bill_of_materials": [
+                    {"part_no": "GSK-HE3301", "description": "HE-3301 Cooler Channel Gasket Kit", "qty": 1, "unit": "KIT"},
+                    {"part_no": "CL-AGENT-BIO", "description": "Biodegradable Scale Dissolver Solution", "qty": 50, "unit": "LTR"},
+                    {"part_no": "TOOL-HYDRO-JET", "description": "500-bar Hydro-Jetting Nozzle & Flexible Lance Kit", "qty": 1, "unit": "SET"},
+                ],
+                "action_steps": [
+                    {"step": 1, "action": "Isolate shell-side cooling water loop and divert lube oil flow to secondary standby circuit.", "timeframe": "< 45 min", "source": "HE-3301 Isolation SOP"},
+                    {"step": 2, "action": "Unbolt channel head and execute 500-bar hydro-jet cleaning of fouled tube bundle passes.", "timeframe": "2.5 hours", "source": "Heat Exchanger Cleaning Standard"},
+                    {"step": 3, "action": "Perform hydrostatic pressure hold test at 1.5x design pressure before returning to service.", "timeframe": "45 min", "source": "ASME Sec VIII Inspection"},
+                ],
+            },
+            {
+                "order_id": "CAPA-2026-04",
+                "title": "Plug Leaking Cooler Tubes & Drain Protocol Upgrade",
+                "equipment_tag": "HE-3301 / TK-3301",
+                "equipment_name": "Lube Oil Auxiliary System",
+                "category": "ENGINEERING FIX",
+                "order_type": "CAPA (Management of Change / Root Cause Elimination)",
+                "priority": "P2 - Medium Priority",
+                "priority_color": "#38BDF8",
+                "default_step": 0,
+                "target_duration_hrs": 6.0,
+                "required_window": "Controlled Turnaround Window",
+                "assigned_crew": "ENG-01 (Reliability Engineer) & STA-01 (Supervisor)",
+                "work_center": "ENG-REL-01",
+                "safety_permit": "MOC-2026-REL-09 (Management of Change Protocol Approved)",
+                "risk_before": "Contamination Vulnerability (1,800 ppm Water Ingress)",
+                "risk_after": "Permanent Defect Elimination (< 100 ppm Water Limit)",
+                "avoided_loss_k_usd": 1584.0,
+                "avoided_downtime_hrs": 32.0,
+                "financial_basis": "Permanent Elimination of Water Ingress Root Cause Behind AR-2026-ZCU-0142 Catastrophic Wipe-Out",
+                "source": "RCA-2 Section 5 Permanent Engineering CAPA",
+                "bill_of_materials": [
+                    {"part_no": "PLG-TI-TUBE", "description": "Titanium Expanding Mechanical Tube Plugs", "qty": 8, "unit": "EA"},
+                    {"part_no": "SEN-WATER-OIL", "description": "Inline Optical Moisture-in-Oil Transmitter Probe", "qty": 1, "unit": "EA"},
+                    {"part_no": "VLV-DRAIN-AUTO", "description": "Solenoid Auto-Drain Valve for Lube Sump Boot", "qty": 1, "unit": "EA"},
+                ],
+                "action_steps": [
+                    {"step": 1, "action": "Conduct eddy-current testing across all tube rows and drive titanium expanding plugs into 2 breached tubes.", "timeframe": "3 hours", "source": "Non-Destructive Testing SOP"},
+                    {"step": 2, "action": "Mount inline optical moisture-in-oil transmitter probe on TK-3301 sump header with DCS high alarm trip interlock.", "timeframe": "2 hours", "source": "Instrumentation Engineering MOC"},
+                    {"step": 3, "action": "Replace manual shift drain log with digital barcode scan verification on bottom boot water drain valve.", "timeframe": "1 hour", "source": "Operations Integrity Mandate"},
+                ],
+            },
+        ]
+

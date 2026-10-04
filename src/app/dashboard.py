@@ -91,11 +91,13 @@ st.markdown(
         font-weight: 700;
         color: #F8FAFC;
         margin-top: 4px;
+        font-variant-numeric: tabular-nums;
     }
     .cbm-sub {
         font-size: 11px;
         color: #38BDF8;
         margin-top: 3px;
+        font-variant-numeric: tabular-nums;
     }
     
     /* ISA-18.2 Alarm & State Status Badges */
@@ -357,9 +359,26 @@ def main():
             )
 
         with c2:
-            st.plotly_chart(
-                create_health_index_gauge(snap["health_index"], snap["status_color"], snap["operational_state"]),
-                use_container_width=True,
+            hi_val = snap["health_index"]
+            hi_color = "#10B981" if hi_val >= 85.0 else ("#F59E0B" if hi_val >= 65.0 else "#EF4444")
+            st.markdown(
+                f"""
+                <div class="cbm-card">
+                    <div class="cbm-label">Asset Health Score (ISO 10816-3)</div>
+                    <div class="cbm-val" style="color:{hi_color};">{hi_val:.1f}%</div>
+                    <div style="margin-top:8px;">
+                        <div style="background:#0F172A; border-radius:3px; height:8px; width:100%; overflow:hidden; border:1px solid #334155;">
+                            <div style="background:{hi_color}; width:{min(hi_val, 100.0):.1f}%; height:100%;"></div>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:9px; color:#64748B; margin-top:4px;">
+                            <span>Trip &lt;65%</span>
+                            <span>Warning 65-84.9%</span>
+                            <span>Normal &ge;85%</span>
+                        </div>
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
             )
 
         with c3:
@@ -714,86 +733,256 @@ def main():
     # TAB 3: MAINTENANCE TASKS & WORK ORDERS
     # =========================================================================
     with tab3:
-        st.markdown("### Enterprise Maintenance Tasks & Work Orders (SAP PM)")
-        st.caption("Dynamic timeline adaptation: Work order priority, status, and action steps automatically update with operational state.")
+        st.markdown("### Condition-Based Maintenance Work Orders Tracker (SAP PM / CMMS)")
+        st.caption("Interactive operational action lifecycle: Select and track prioritized maintenance work orders with full Bill of Materials, SOP steps, and CMMS digital closeout.")
 
-        # Dynamically retrieve work order payload for the current hour
-        sap_data = provider.generate_sap_work_order(current_hour)
+        # Initialize session state for work order lifecycle
+        if "wo_lifecycle" not in st.session_state:
+            st.session_state.wo_lifecycle = {
+                "WO-8842109": {"step_idx": 1, "signed_off": False, "signoff_stamp": None},
+                "WO-8842110": {"step_idx": 0, "signed_off": False, "signoff_stamp": None},
+                "CAPA-2026-04": {"step_idx": 0, "signed_off": False, "signoff_stamp": None},
+            }
 
-        col_wo, col_sop = st.columns([1.2, 1.0])
+        if "selected_wo_id" not in st.session_state:
+            st.session_state.selected_wo_id = "WO-8842109"
 
-        with col_wo:
-            st.markdown("#### SAP Plant Maintenance Work Order Ticket")
-            st.markdown(
-                f"""
-                <div style="background:#0F172A; border:1px solid #38BDF8; border-radius:6px; padding:14px 16px; margin-bottom:14px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #334155; padding-bottom:8px; margin-bottom:10px;">
-                        <div style="font-weight:700; font-size:13px; color:#38BDF8; font-family:'Inter', monospace;">
-                            ORDER: {sap_data['work_order_id']}
-                        </div>
-                        <span class="isa-badge isa-normal">{sap_data['status']}</span>
-                    </div>
-                    <div style="font-size:12px; line-height:1.7; color:#F8FAFC;">
-                        • <b>Notification:</b> <code>{sap_data['notification_id']}</code><br>
-                        • <b>Order Type:</b> <code>{sap_data['order_type']}</code><br>
-                        • <b>Functional Location:</b> <code>{sap_data['functional_location']}</code><br>
-                        • <b>Asset Description:</b> {sap_data['asset_description']}<br>
-                        • <b>Priority:</b> <span style="color:#EF4444; font-weight:700;">{sap_data['priority']}</span><br>
-                        • <b>Target Duration:</b> {sap_data['target_duration_hrs']} Hours | Lead Window: {sap_data['required_window']}<br>
-                        • <b>Assigned Crew:</b> {sap_data['lead_technician']} ({sap_data['work_center']})<br>
-                        • <b>Permit-to-Work:</b> <code>{sap_data['safety_permit']}</code>
-                    </div>
-                    <div style="margin-top:10px; border-top:1px solid #334155; padding-top:8px; font-size:11px;">
-                        <b>Required Bill of Materials (BoM):</b>
-                        <div style="color:#94A3B8; font-size:11px; margin-top:4px;">
-                """,
-                unsafe_allow_html=True,
-            )
-            for item in sap_data.get("bill_of_materials", []):
-                st.markdown(
-                    f"<div style='margin-left:8px; color:#CBD5E1;'>• <code>{item['part_no']}</code>: {item['description']} (Qty: {item['qty']} {item['unit']})</div>",
-                    unsafe_allow_html=True,
-                )
-            st.markdown(
-                """
-                        </div>
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+        tasks_catalog = provider.get_work_orders_tracker_catalog()
+        active_task = next((t for t in tasks_catalog if t["order_id"] == st.session_state.selected_wo_id), tasks_catalog[0])
 
-            c_btn1, c_btn2 = st.columns(2)
-            if c_btn1.button("Dispatch Work Order to CMMS", use_container_width=True, type="primary"):
-                st.success(f"Work order {sap_data['work_order_id']} dispatched to {sap_data['work_center']}.")
-            if c_btn2.button("Print Maintenance Order", use_container_width=True):
-                st.info("Maintenance order sheet queued for export.")
+        col_list, col_detail = st.columns([1.1, 2.0])
 
-        with col_sop:
-            st.markdown("#### Standard Operating Procedure (SOP) Action Steps")
-            action_steps = sap_data.get("action_steps", snap.get("immediate_actions", []))
-            for act in action_steps:
+        # --- LEFT COLUMN (35%): LIST OF ACTIVE WORK ORDERS ---
+        with col_list:
+            st.markdown("#### Active Maintenance Work Orders")
+            st.caption("Prioritized engineering intervention queue:")
+
+            for task in tasks_catalog:
+                tid = task["order_id"]
+                tstate = st.session_state.wo_lifecycle.get(tid, {"step_idx": task["default_step"], "signed_off": False})
+                step_idx = tstate["step_idx"]
+                is_selected = (tid == st.session_state.selected_wo_id)
+
+                if step_idx == 3:
+                    status_badge = '<span class="isa-badge isa-normal">Completed &amp; Verified</span>'
+                elif step_idx == 2:
+                    status_badge = '<span class="isa-badge isa-amber">In Progress</span>'
+                elif step_idx == 1:
+                    status_badge = '<span class="isa-badge" style="background:rgba(56,189,248,0.15); color:#38BDF8; border:1px solid #38BDF8;">Dispatched</span>'
+                else:
+                    status_badge = '<span class="isa-badge isa-grey">Open</span>'
+
+                border_style = "2px solid #38BDF8" if is_selected else "1px solid #334155"
+                bg_style = "#1E293B" if is_selected else "#0F172A"
+
                 st.markdown(
                     f"""
-                    <div class="action-item">
-                        <b>Step {act.get('step', 1)}:</b> {act.get('action', '')}
-                        <div style="font-size:10px; color:#94A3B8; margin-top:3px;">
-                            Timeframe: {act.get('timeframe', '< 30 min')} &nbsp;|&nbsp; Source: <b>{act.get('source', 'RCA-2')}</b>
+                    <div style="background:{bg_style}; border:{border_style}; border-radius:6px; padding:12px 14px; margin-bottom:8px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                            <span style="font-size:10px; font-weight:700; color:{task['priority_color']}; text-transform:uppercase; letter-spacing:0.5px;">
+                                {task['category']}
+                            </span>
+                            <div>{status_badge}</div>
+                        </div>
+                        <div style="font-weight:700; font-size:13px; color:#F8FAFC; margin-bottom:2px; font-family:'Inter', monospace;">
+                            {task['order_id']} | {task['equipment_tag']}
+                        </div>
+                        <div style="font-size:12px; color:#CBD5E1; margin-bottom:6px; line-height:1.3;">
+                            {task['title']}
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:11px; color:#94A3B8; border-top:1px solid #334155; padding-top:4px;">
+                            <span>Window: <b>{task['required_window']}</b></span>
+                            <span>Duration: <b>{task['target_duration_hrs']:.1f}h</b></span>
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+                btn_label = f"Selected: {task['order_id']}" if is_selected else f"Inspect {task['order_id']}"
+                if st.button(btn_label, key=f"btn_select_{tid}", use_container_width=True, type="primary" if is_selected else "secondary"):
+                    st.session_state.selected_wo_id = tid
+                    st.rerun()
+
+        # --- RIGHT COLUMN (65%): TASK DETAILS & LIFECYCLE CONTROLS ---
+        with col_detail:
+            st.markdown(f"#### Task Details: {active_task['order_id']} — {active_task['title']}")
+
+            tid = active_task["order_id"]
+            curr_state = st.session_state.wo_lifecycle.get(tid, {"step_idx": active_task["default_step"], "signed_off": False, "signoff_stamp": None})
+            step_idx = curr_state["step_idx"]
+
+            # 4-Step Progress Indicator
+            steps = ["1. Open", "2. Dispatched", "3. In Progress", "4. Completed & Verified"]
+            p_cols = st.columns(4)
+            for idx, s_name in enumerate(steps):
+                with p_cols[idx]:
+                    if idx < step_idx:
+                        st.markdown(
+                            f"""
+                            <div style="background:rgba(16,185,129,0.15); border:1px solid #10B981; border-radius:4px; padding:6px 8px; text-align:center;">
+                                <div style="font-size:10px; font-weight:700; color:#10B981;">{s_name}</div>
+                                <div style="font-size:9px; color:#10B981; font-weight:700;">DONE</div>
+                            </div>
+                            """,
+                            unsafe_allow_html=True,
+                        )
+                    elif idx == step_idx:
+                        active_color = "#10B981" if idx == 3 else "#38BDF8"
+                        st.markdown(
+                            f"""
+                            <div style="background:rgba(56,189,248,0.2); border:2px solid {active_color}; border-radius:4px; padding:6px 8px; text-align:center;">
+                                <div style="font-size:10px; font-weight:700; color:{active_color};">{s_name}</div>
+                                <div style="font-size:9px; color:{active_color}; font-weight:700;">ACTIVE</div>
+                            </div>
+                            """,
+                            unsafe_allow_html=True,
+                        )
+                    else:
+                        st.markdown(
+                            f"""
+                            <div style="background:#0F172A; border:1px solid #334155; border-radius:4px; padding:6px 8px; text-align:center;">
+                                <div style="font-size:10px; font-weight:600; color:#64748B;">{s_name}</div>
+                                <div style="font-size:9px; color:#475569;">PENDING</div>
+                            </div>
+                            """,
+                            unsafe_allow_html=True,
+                        )
+
+            st.markdown("<div style='margin-top:12px;'></div>", unsafe_allow_html=True)
+
+            # Job Details & Bill of Materials
+            jd_col1, jd_col2 = st.columns([1.2, 1.0])
+            with jd_col1:
+                st.markdown(
+                    f"""
+                    <div style="background:#1E293B; border:1px solid #334155; border-radius:6px; padding:12px 14px; font-size:12px; height:100%;">
+                        <div style="font-weight:700; color:#38BDF8; font-size:11px; text-transform:uppercase; margin-bottom:8px; border-bottom:1px solid #334155; padding-bottom:4px;">
+                            Job Specifications &amp; Safety Compliance
+                        </div>
+                        <div style="line-height:1.7; color:#F8FAFC;">
+                            • <b>Target Equipment:</b> <code>{active_task['equipment_tag']}</code> ({active_task['equipment_name']})<br>
+                            • <b>Order Type:</b> <code>{active_task['order_type']}</code><br>
+                            • <b>Priority Classification:</b> <span style="color:{active_task['priority_color']}; font-weight:700;">{active_task['priority']}</span><br>
+                            • <b>Execution Lead Window:</b> {active_task['required_window']}<br>
+                            • <b>Target Turnaround:</b> {active_task['target_duration_hrs']:.1f} Hours<br>
+                            • <b>Assigned Work Crew:</b> {active_task['assigned_crew']} (Center: <code>{active_task['work_center']}</code>)<br>
+                            • <b>Safety Permit (PTW):</b> <span style="color:#10B981; font-weight:600;">{active_task['safety_permit']}</span>
                         </div>
                     </div>
                     """,
                     unsafe_allow_html=True,
                 )
 
-            st.markdown("<div style='margin-top:14px;'></div>", unsafe_allow_html=True)
-            st.markdown("#### Corrective & Preventive Actions (CAPA) Log")
-            for capa in snap["permanent_capa"][:3]:
+            with jd_col2:
+                bom_items_html = "".join([
+                    f"<div style='margin-bottom:4px;'>• <code>{p['part_no']}</code>: {p['description']} (<b>{p['qty']} {p['unit']}</b>)</div>"
+                    for p in active_task["bill_of_materials"]
+                ])
                 st.markdown(
                     f"""
-                    <div class="capa-item">
-                        <b>{capa.get('category', 'Technical CAPA')}:</b> {capa.get('action', '')}
-                        <div style="font-size:10px; color:#94A3B8; margin-top:3px;">
-                            PIC: <b>{capa.get('pic', 'Reliability')}</b> &nbsp;|&nbsp; Target: <b>{capa.get('due_date', '2026-05-30')}</b> &nbsp;|&nbsp; Ref: {capa.get('source', 'RCA-2')}
+                    <div style="background:#1E293B; border:1px solid #334155; border-radius:6px; padding:12px 14px; font-size:12px; height:100%;">
+                        <div style="font-weight:700; color:#F59E0B; font-size:11px; text-transform:uppercase; margin-bottom:8px; border-bottom:1px solid #334155; padding-bottom:4px;">
+                            Reserved Bill of Materials (SAP BoM)
+                        </div>
+                        <div style="line-height:1.5; color:#CBD5E1; font-size:11px;">
+                            {bom_items_html}
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+            st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
+
+            # Standard Operating Procedure (SOP) Action Steps
+            st.markdown("##### Standard Operating Procedure (SOP) Action Steps")
+            for act in active_task["action_steps"]:
+                st.markdown(
+                    f"""
+                    <div class="action-item">
+                        <b>Step {act['step']}:</b> {act['action']}
+                        <div style="font-size:10px; color:#94A3B8; margin-top:2px;">
+                            Execution Window: <b>{act['timeframe']}</b> &nbsp;|&nbsp; Reference SOP: <i>{act['source']}</i>
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+            # Risk Reduction & Economic Impact Card
+            st.markdown(
+                f"""
+                <div style="background:#1E293B; border:1px solid #334155; border-left:3px solid #10B981; border-radius:4px; padding:10px 14px; margin-top:10px; font-size:11px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-weight:700; color:#10B981; text-transform:uppercase;">
+                            Risk Reduction &amp; Financial Avoidance Impact
+                        </span>
+                        <span style="font-size:13px; font-weight:700; color:#10B981;">
+                            +${active_task['avoided_loss_k_usd']:,.1f}k USD Avoided Loss
+                        </span>
+                    </div>
+                    <div style="color:#CBD5E1; margin-top:4px; line-height:1.4;">
+                        • <b>Pre-Mitigation Risk:</b> {active_task['risk_before']}<br>
+                        • <b>Post-Mitigation Safe State:</b> {active_task['risk_after']}<br>
+                        • <b>Avoided Production Downtime:</b> {active_task['avoided_downtime_hrs']:.1f} Hours Saved ({active_task['financial_basis']})
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            # Action Lifecycle Buttons
+            st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
+            act_c1, act_c2, act_c3 = st.columns([1.2, 1.2, 0.8])
+
+            with act_c1:
+                if step_idx < 3:
+                    if st.button("Advance Task to Next Step", key=f"btn_adv_{tid}", use_container_width=True, type="primary"):
+                        st.session_state.wo_lifecycle[tid]["step_idx"] = min(step_idx + 1, 3)
+                        if st.session_state.wo_lifecycle[tid]["step_idx"] == 3:
+                            st.session_state.wo_lifecycle[tid]["signed_off"] = True
+                            st.session_state.wo_lifecycle[tid]["signoff_stamp"] = "2026-04-27 10:15:00 UTC | IR-341"
+                        st.rerun()
+                else:
+                    st.button("Task Completed & Verified", key=f"btn_adv_done_{tid}", use_container_width=True, disabled=True)
+
+            with act_c2:
+                if step_idx < 3:
+                    if st.button("Verify & Close Task", key=f"btn_close_{tid}", use_container_width=True):
+                        st.session_state.wo_lifecycle[tid]["step_idx"] = 3
+                        st.session_state.wo_lifecycle[tid]["signed_off"] = True
+                        st.session_state.wo_lifecycle[tid]["signoff_stamp"] = "2026-04-27 10:15:00 UTC | IR-341"
+                        st.rerun()
+                else:
+                    if st.button("Re-open Task", key=f"btn_reopen_{tid}", use_container_width=True):
+                        st.session_state.wo_lifecycle[tid]["step_idx"] = 0
+                        st.session_state.wo_lifecycle[tid]["signed_off"] = False
+                        st.session_state.wo_lifecycle[tid]["signoff_stamp"] = None
+                        st.rerun()
+
+            with act_c3:
+                if st.button("Reset Lifecycle", key=f"btn_reset_{tid}", use_container_width=True):
+                    st.session_state.wo_lifecycle[tid] = {
+                        "step_idx": active_task["default_step"],
+                        "signed_off": False,
+                        "signoff_stamp": None,
+                    }
+                    st.rerun()
+
+            # Sign-off box when completed
+            if step_idx == 3:
+                stamp = curr_state.get("signoff_stamp") or "2026-04-27 10:15:00 UTC | IR-341"
+                st.markdown(
+                    f"""
+                    <div style="background:rgba(6,78,59,0.4); border:1px solid #10B981; border-radius:4px; padding:10px 14px; margin-top:10px;">
+                        <div style="font-weight:700; color:#10B981; font-size:11px; text-transform:uppercase;">
+                            Official CMMS Maintenance Verification &amp; Closeout Certificate
+                        </div>
+                        <div style="font-size:11px; color:#ECFDF5; margin-top:4px; line-height:1.5;">
+                            • Sign-Off Authority: <b>Lead Reliability Superintendent IR-341</b><br>
+                            • Safety Closeout: <b>{active_task['safety_permit'].split('(')[0].strip()} Verified &amp; Hydrocarbon Line De-isolated</b><br>
+                            • Digital Timestamp: <b>{stamp}</b><br>
+                            • CMMS Audit Record: <b>Work order closed and synchronized to OSIsoft PI Condition Server.</b>
                         </div>
                     </div>
                     """,
